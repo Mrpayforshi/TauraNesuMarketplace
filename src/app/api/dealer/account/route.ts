@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Step 2: Parse body and extract allowed fields
-    let body: Record<string, any>;
+    let body: Record<string, string | null | undefined>;
     try {
       body = await request.json();
     } catch {
@@ -104,16 +104,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Only allow these fields; silently strip others
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, string | null> = {};
 
     if ('contact_name' in body) {
-      updateData.contact_name = body.contact_name;
+      updateData.contact_name = body.contact_name || null;
     }
     if ('phone' in body) {
-      updateData.phone = body.phone;
+      updateData.phone = body.phone || null;
     }
     if ('city' in body) {
-      updateData.city = body.city;
+      updateData.city = body.city || null;
     }
 
     // Step 3: Server-side validation
