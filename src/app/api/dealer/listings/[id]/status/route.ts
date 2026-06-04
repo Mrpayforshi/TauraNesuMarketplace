@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDealerFromRequest } from '@/lib/auth';
+import { getDealerFromRequest } from '@/lib/dealer-auth';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Dealer-allowed statuses
