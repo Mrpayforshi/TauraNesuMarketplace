@@ -17,7 +17,7 @@ export async function DELETE(
     const dealer = await getDealerFromRequest(request);
     if (!dealer) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
