@@ -25,7 +25,8 @@ export async function POST(
     const submissionId = params.id;
 
     // Step 2: Parse body and validate action
-    let body: Record<string, any>;
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let body: Record<string, any>; // request body shape is validated manually below before use
     try {
       body = await request.json();
     } catch {
