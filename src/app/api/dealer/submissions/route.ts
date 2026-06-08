@@ -68,20 +68,30 @@ export async function GET(request: NextRequest) {
 
     // Step 3: Query logic based on view
     if (view === 'new') {
-      // Submissions with status 'valued' or 'in_pipeline' where no leads row exists for this dealer
-      const { data: submissions, error: submissionError } = await supabase
-        .from('submissions')
-        .select('id')
-        .in('status', ['valued', 'in_pipeline'])
-        .not('id', 'in', 
-          `(${await getLeadsSubquery(supabase, dealer.id, null)})`
-        );
+  // First get all submission IDs this dealer has already acted on
+  const { data: actedLeads } = await supabase
+    .from('leads')
+    .select('submission_id')
+    .eq('dealer_id', dealer.id);
 
-      if (submissionError && submissionError.code !== 'PGRST116') {
-        throw submissionError;
-      }
+  const actedIds = (actedLeads || []).map((l: any) => l.submission_id);
 
-      submissionIds = submissions?.map((s) => s.id) || [];
+  // Then fetch submissions not in that list
+  let submissionsQuery = supabase
+    .from('submissions')
+    .select('id')
+    .in('status', ['valued', 'in_pipeline']);
+
+  if (actedIds.length > 0) {
+    submissionsQuery = submissionsQuery.not('id', 'in', `(${actedIds.map((id: string) => `'${id}'`).join(',')})`);
+  }
+
+  const { data: submissions, error: submissionError } = await submissionsQuery;
+
+  if (submissionError) throw submissionError;
+
+  submissionIds = submissions?.map((s: any) => s.id) || [];
+}
     } else if (view === 'accepted') {
       // Submissions where a leads row exists with action = 'accepted'
       const { data: leads, error: leadsError } = await supabase
@@ -202,8 +212,7 @@ export async function GET(request: NextRequest) {
  * Returns submission IDs that have a leads row for the given dealer with optional action filter.
  */
 async function getLeadsSubquery(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any, // Supabase client type varies by auth context; typed as any to accept both createServerClient and createServerSupabaseClient
+  supabase: any,
   dealerId: string,
   action: string | null
 ): Promise<string> {
@@ -214,6 +223,6 @@ async function getLeadsSubquery(
   }
 
   const { data } = await query;
-  const ids = (data || []).map((l: any) => // lead row shape not explicitly typed; submission_id is always present
-  return ids || "''";
+  const ids = (data || []).map((l: any) => l.submission_id);
+  return ids.length > 0 ? ids.join("','") : "''";
 }
