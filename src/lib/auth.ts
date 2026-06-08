@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from './supabase';
+import { createServerClient } from './supabase';
 
 export interface AuthUser {
   id: string;
@@ -20,7 +20,7 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
     const token = authHeader.slice(7);
 
     // Create Supabase client and verify the token
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerClient();
     const { data, error } = await supabase.auth.getUser(token);
 
     // If there is an error or no user returned, return null
