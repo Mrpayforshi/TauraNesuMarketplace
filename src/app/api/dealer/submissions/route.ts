@@ -202,7 +202,8 @@ export async function GET(request: NextRequest) {
  * Returns submission IDs that have a leads row for the given dealer with optional action filter.
  */
 async function getLeadsSubquery(
-  supabase: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any, // Supabase client type varies by auth context; typed as any to accept both createServerClient and createServerSupabaseClient
   dealerId: string,
   action: string | null
 ): Promise<string> {
@@ -213,6 +214,6 @@ async function getLeadsSubquery(
   }
 
   const { data } = await query;
-  const ids = (data || []).map((l: any) => `'${l.submission_id}'`).join(',');
+  const ids = (data || []).map((l: any) => // lead row shape not explicitly typed; submission_id is always present
   return ids || "''";
 }
