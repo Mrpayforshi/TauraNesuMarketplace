@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from './supabase'
+import { createServerClient } from './supabase';
 import { NextRequest } from 'next/server'
 
 export interface AuthUser {
@@ -16,7 +16,7 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
   if (!authorization?.startsWith('Bearer ')) return null
 
   const token = authorization.slice(7)
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient();
 
   const { data: { user }, error } = await supabase.auth.getUser(token)
   if (error || !user) return null
