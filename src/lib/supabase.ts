@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient as createSSRClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -70,8 +70,10 @@ export function createServerSupabaseClient() {
  * - Public routes (use createServerClient instead)
  * - NEVER expose this client to the browser or client-side code
  */
-export function createAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+export function createServerSupabaseClient() {
+  const cookieStore = cookies();
+
+  return createSSRClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
