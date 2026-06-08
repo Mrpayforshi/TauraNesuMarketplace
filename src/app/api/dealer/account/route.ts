@@ -35,13 +35,14 @@ export async function GET(request: NextRequest) {
       : null;
 
     // Step 3: Count active listings
-    const { data: listingsData, error: listingsError } = await supabase
-      .from('listings')
-      .select('id')
-      .eq('dealer_id', dealer.id)
-      .eq('status', 'active');
-
-    const activeListingCount = listingsData?.length || 0;
+   const { count: activeListingCount, error: listingsError } = await supabase
+  .from('listings')
+  .select('*', { count: 'exact', head: true })
+  .eq('dealer_id', dealer.id)
+  .eq('status', 'active');
+    if (listingsError) {
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+}
 
     // Step 4: Return response
     const response = {
