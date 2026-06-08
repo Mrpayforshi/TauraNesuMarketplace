@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const dealer = await getDealerFromRequest(request);
     if (!dealer) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
