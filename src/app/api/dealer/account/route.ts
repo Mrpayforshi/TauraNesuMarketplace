@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .eq('dealer_id', dealer.id)
       .eq('status', 'active');
 
-    const activeListing_count = listingsData?.length || 0;
+    const activeListingCount = listingsData?.length || 0;
 
     // Step 4: Return response
     const response = {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             status: subscription.status,
           }
         : null,
-      active_listing_count: activeListing_count,
+      active_listing_count: activeListingCount,
     };
 
     return NextResponse.json(response, { status: 200 });
