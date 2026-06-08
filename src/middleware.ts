@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from './lib/supabase';
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Refresh session on every request
-  try {
-    const supabase = createServerSupabaseClient();
-    await supabase.auth.refreshSession();
-  } catch (error) {
-    // Continue even if refresh fails
-  }
+  
 
   // Check if this is a protected dealer route
   const isDealerApiRoute = pathname.startsWith('/api/dealer/');
