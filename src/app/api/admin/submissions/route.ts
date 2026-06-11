@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 /**
  * GET /api/admin/submissions
- * List all sell submissions. Supports ?status= filter.
+ * List all Sell Your Car submissions. Supports ?status= filter.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
     let query = supabase
-      .from('sell_submissions')
+      .from('submissions')
       .select('*')
       .order('created_at', { ascending: false });
 
