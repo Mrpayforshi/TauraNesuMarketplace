@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/admin-auth';
 import { createAdminClient } from '@/lib/supabase';
 
-const VALID_STATUSES = ['pending', 'under_review', 'valued', 'completed', 'rejected'];
+const VALID_STATUSES = ['pending', 'valued', 'in_pipeline', 'accepted', 'closed', 'rejected'];
 
 /**
  * PATCH /api/admin/submissions/[id]
- * Update a submission: set valuation_usd and/or advance status.
- * Body: { status?: string, valuation_usd?: number, admin_notes?: string }
+ * Set valuation range, update status, add notes.
+ * Body: { status?, valuation_min_usd?, valuation_max_usd?, valuation_notes? }
  */
 export async function PATCH(
   request: NextRequest,
@@ -33,26 +33,37 @@ export async function PATCH(
     if ('status' in body) {
       if (!VALID_STATUSES.includes(body.status as string)) {
         return NextResponse.json(
-          { error: `Status must be one of: ${VALID_STATUSES.join(', ')}` },
+          { error: `status must be one of: ${VALID_STATUSES.join(', ')}` },
           { status: 400 }
         );
       }
       updateData.status = body.status;
     }
 
-    if ('valuation_usd' in body) {
-      const val = Number(body.valuation_usd);
+    if ('valuation_min_usd' in body) {
+      const val = Number(body.valuation_min_usd);
       if (isNaN(val) || val < 0) {
         return NextResponse.json(
-          { error: 'valuation_usd must be a non-negative number' },
+          { error: 'valuation_min_usd must be a non-negative number' },
           { status: 400 }
         );
       }
-      updateData.valuation_usd = val;
+      updateData.valuation_min_usd = val;
     }
 
-    if ('admin_notes' in body) {
-      updateData.admin_notes = body.admin_notes ?? null;
+    if ('valuation_max_usd' in body) {
+      const val = Number(body.valuation_max_usd);
+      if (isNaN(val) || val < 0) {
+        return NextResponse.json(
+          { error: 'valuation_max_usd must be a non-negative number' },
+          { status: 400 }
+        );
+      }
+      updateData.valuation_max_usd = val;
+    }
+
+    if ('valuation_notes' in body) {
+      updateData.valuation_notes = body.valuation_notes ?? null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -64,7 +75,7 @@ export async function PATCH(
 
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .from('sell_submissions')
+      .from('submissions')
       .update(updateData)
       .eq('id', id)
       .select()
