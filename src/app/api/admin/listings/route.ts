@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase';
 
 /**
  * GET /api/admin/listings
- * List all listings. Supports ?status=pending|active|rejected filter.
+ * List all listings across all dealers. Supports ?status= filter.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('listings')
       .select(`
-        id, title, make, model, year, price_usd, status, created_at,
+        id, make, model, year, price_usd, status, created_at,
         dealers ( id, name )
       `)
       .order('created_at', { ascending: false });
@@ -41,3 +41,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+  
