@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '../_guard'
-
+ 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req)
   if (auth.error) return auth.error
