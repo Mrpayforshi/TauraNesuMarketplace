@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-
+ 
   const make       = searchParams.get('make')
   const model      = searchParams.get('model')
   const body_type  = searchParams.get('body_type')
