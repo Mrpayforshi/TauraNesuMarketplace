@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate slug
-    const slug = generateSlug(body.make, body.model, body.year, dealer.city);
+   const slug = generateSlug(body.make, body.model, body.year, dealer.city ?? '');
 
     // Prepare listing data
     const listingData = {
