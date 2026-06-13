@@ -67,31 +67,30 @@ export async function GET(request: NextRequest) {
     let submissionIds: string[] = [];
 
     // Step 3: Query logic based on view
-    if (view === 'new') {
-  // First get all submission IDs this dealer has already acted on
-  const { data: actedLeads } = await supabase
-    .from('leads')
-    .select('submission_id')
-    .eq('dealer_id', dealer.id);
+  if (view === 'new') {
+      // First get all submission IDs this dealer has already acted on
+      const { data: actedLeads } = await supabase
+        .from('leads')
+        .select('submission_id')
+        .eq('dealer_id', dealer.id);
 
-  const actedIds = (actedLeads || []).map((l: any) => l.submission_id);
+      const actedIds = (actedLeads || []).map((l: any) => l.submission_id);
 
-  // Then fetch submissions not in that list
-  let submissionsQuery = supabase
-    .from('submissions')
-    .select('id')
-    .in('status', ['valued', 'in_pipeline']);
+      // Then fetch submissions not in that list
+      let submissionsQuery = supabase
+        .from('submissions')
+        .select('id')
+        .in('status', ['valued', 'in_pipeline']);
 
-  if (actedIds.length > 0) {
-    submissionsQuery = submissionsQuery.not('id', 'in', `(${actedIds.map((id: string) => `'${id}'`).join(',')})`);
-  }
+      if (actedIds.length > 0) {
+        submissionsQuery = submissionsQuery.not('id', 'in', `(${actedIds.map((id: string) => `'${id}'`).join(',')})`);
+      }
 
-  const { data: submissions, error: submissionError } = await submissionsQuery;
+      const { data: submissions, error: submissionError } = await submissionsQuery;
 
-  if (submissionError) throw submissionError;
+      if (submissionError) throw submissionError;
 
-  submissionIds = submissions?.map((s: any) => s.id) || [];
-}
+      submissionIds = submissions?.map((s: any) => s.id) || [];
     } else if (view === 'accepted') {
       // Submissions where a leads row exists with action = 'accepted'
       const { data: leads, error: leadsError } = await supabase
