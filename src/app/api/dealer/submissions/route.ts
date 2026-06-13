@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     let submissionIds: string[] = [];
 
     // Step 3: Query logic based on view
-      if (view === 'new') {
+  if (view === 'new') {
       // First get all submission IDs this dealer has already acted on
       const { data: actedLeads } = await supabase
         .from('leads')
