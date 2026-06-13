@@ -181,7 +181,7 @@ export async function PATCH(
       const make = (updateData.make as string) || listing.make;
       const model = (updateData.model as string) || listing.model;
       const year = (updateData.year as number) || listing.year;
-      updateData.slug = generateSlug(make, model, year, dealer.city);
+      updateData.slug = generateSlug(make, model, year, dealer.city ?? '');
     }
 
     // Trim string fields
