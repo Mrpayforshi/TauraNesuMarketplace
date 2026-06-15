@@ -1,0 +1,124 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--navy);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+.links {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.navLink {
+  color: rgba(255,255,255,0.75);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.navLink:hover { color: #fff; background: rgba(255,255,255,0.07); }
+
+.navLinkAccent {
+  color: #6ee7b7;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.navLinkAccent:hover { color: #fff; background: rgba(255,255,255,0.07); }
+
+.searchForm {
+  flex: 1;
+  max-width: 380px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: rgba(255,255,255,0.4);
+  display: flex;
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  padding: 9px 12px 9px 38px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.searchInput::placeholder { color: rgba(255,255,255,0.35); }
+.searchInput:focus {
+  border-color: var(--blue);
+  background: rgba(255,255,255,0.1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.signIn {
+  color: rgba(255,255,255,0.75);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.signIn:hover { color: #fff; }
+
+.dealerBtn {
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  transition: border-color 0.15s, background 0.15s;
+}
+.dealerBtn:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.05); }
+
+.sellBtn {
+  background: var(--blue);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.sellBtn:hover { background: var(--blue-dark); }
