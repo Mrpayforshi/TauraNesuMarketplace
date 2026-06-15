@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: "Car Platform ZW — Zimbabwe's Premium Automotive Marketplace",
-  description: 'Browse verified dealers. Sell your car fast. Zimbabwe\'s first curated automotive marketplace.',
+  title: "TauraNesu — Zimbabwe's Premium Automotive Marketplace",
+  description: "Browse verified dealers. Sell your car fast. Zimbabwe's trusted automotive marketplace.",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
