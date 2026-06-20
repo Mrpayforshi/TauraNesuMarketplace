@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch, clearAccessToken } from '@/lib/client-auth';
 import styles from './admin-dealers.module.css';
 
 interface Dealer {
@@ -51,8 +52,12 @@ export default function AdminDealersPage() {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch('/api/admin/dealers');
-        if (res.status === 401) { router.push('/login'); return; }
+        const res = await authFetch('/api/admin/dealers');
+        if (res.status === 401) {
+          clearAccessToken();
+          router.push('/login');
+          return;
+        }
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to load dealers');
         if (active) setDealers(data.dealers || []);
@@ -77,7 +82,7 @@ export default function AdminDealersPage() {
   async function handleApprove(dealer: Dealer) {
     setActioningId(dealer.id);
     try {
-      const res = await fetch(`/api/admin/dealers/${dealer.id}/approve`, { method: 'PATCH' });
+      const res = await authFetch(`/api/admin/dealers/${dealer.id}/approve`, { method: 'PATCH' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Action failed');
       setDealers(prev => prev.map(d => (d.id === dealer.id ? data.dealer : d)));
@@ -97,7 +102,7 @@ export default function AdminDealersPage() {
     if (!suspendTarget) return;
     setSuspendSaving(true);
     try {
-      const res = await fetch(`/api/admin/dealers/${suspendTarget.id}/suspend`, {
+      const res = await authFetch(`/api/admin/dealers/${suspendTarget.id}/suspend`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: suspendReason.trim() || undefined }),
@@ -131,7 +136,7 @@ export default function AdminDealersPage() {
     setEditSaving(true);
     setEditError('');
     try {
-      const res = await fetch(`/api/admin/dealers/${editDealer.id}`, {
+      const res = await authFetch(`/api/admin/dealers/${editDealer.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
