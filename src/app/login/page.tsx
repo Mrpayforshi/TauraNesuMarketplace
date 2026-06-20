@@ -4,6 +4,7 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import { setAccessToken } from '@/lib/client-auth';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -40,6 +41,12 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error || 'Login failed. Please try again.');
         return;
+      }
+
+      // Store the access token so authFetch() can attach it to protected
+      // admin/dealer requests going forward.
+      if (data.session) {
+        setAccessToken(data.session);
       }
 
       // Redirect based on role — admin goes to /admin, others to /dealer/dashboard
