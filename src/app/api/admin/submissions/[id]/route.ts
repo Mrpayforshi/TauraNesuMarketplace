@@ -4,14 +4,24 @@ import { createAdminClient } from '@/lib/supabase';
 
 const VALID_STATUSES = ['pending', 'valued', 'in_pipeline', 'accepted', 'closed', 'rejected'];
 
+// Allowed forward transitions. 'rejected' is reachable from any non-terminal status.
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  pending: ['valued', 'rejected'],
+  valued: ['in_pipeline', 'rejected'],
+  in_pipeline: ['accepted', 'rejected'],
+  accepted: ['closed'],
+  closed: [],
+  rejected: [],
+};
+
 /**
  * PATCH /api/admin/submissions/[id]
- * Set valuation range, update status, add notes.
- * Body: { status?, valuation_min_usd?, valuation_max_usd?, valuation_notes? }
+ * Set valuation range, update status, add notes, or reject with a reason.
+ * Body: { status?, valuation_min_usd?, valuation_max_usd?, valuation_notes?, rejection_reason? }
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await getAdminFromRequest(request);
@@ -19,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     let body: Record<string, unknown>;
     try {
@@ -28,16 +38,39 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
+    const supabase = createAdminClient();
+
+    // Fetch current status first so we can validate the transition.
+    const { data: existing, error: fetchError } = await supabase
+      .from('submissions')
+      .select('id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existing) {
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
+    }
+
     const updateData: Record<string, unknown> = {};
 
     if ('status' in body) {
-      if (!VALID_STATUSES.includes(body.status as string)) {
+      const newStatus = body.status as string;
+      if (!VALID_STATUSES.includes(newStatus)) {
         return NextResponse.json(
           { error: `status must be one of: ${VALID_STATUSES.join(', ')}` },
           { status: 400 }
         );
       }
-      updateData.status = body.status;
+      if (newStatus !== existing.status) {
+        const allowed = ALLOWED_TRANSITIONS[existing.status] ?? [];
+        if (!allowed.includes(newStatus)) {
+          return NextResponse.json(
+            { error: `Cannot move from "${existing.status}" to "${newStatus}"` },
+            { status: 409 }
+          );
+        }
+      }
+      updateData.status = newStatus;
     }
 
     if ('valuation_min_usd' in body) {
@@ -62,18 +95,43 @@ export async function PATCH(
       updateData.valuation_max_usd = val;
     }
 
-    if ('valuation_notes' in body) {
-      updateData.valuation_notes = body.valuation_notes ?? null;
-    }
-
-    if (Object.keys(updateData).length === 0) {
+    if (
+      typeof updateData.valuation_min_usd === 'number' &&
+      typeof updateData.valuation_max_usd === 'number' &&
+      updateData.valuation_max_usd < updateData.valuation_min_usd
+    ) {
       return NextResponse.json(
-        { error: 'No valid fields provided' },
+        { error: 'valuation_max_usd cannot be less than valuation_min_usd' },
         { status: 400 }
       );
     }
 
-    const supabase = createAdminClient();
+    if ('valuation_notes' in body) {
+      updateData.valuation_notes = body.valuation_notes ?? null;
+    }
+
+    if ('rejection_reason' in body) {
+      const reason = typeof body.rejection_reason === 'string' ? body.rejection_reason.trim() : '';
+      updateData.rejection_reason = reason || null;
+    }
+
+    // Rejecting requires a reason — enforce it whether or not the caller
+    // also set rejection_reason in the same request.
+    if (updateData.status === 'rejected') {
+      const reasonProvided =
+        typeof updateData.rejection_reason === 'string' && updateData.rejection_reason.length > 0;
+      if (!reasonProvided) {
+        return NextResponse.json(
+          { error: 'rejection_reason is required when rejecting a submission' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from('submissions')
       .update(updateData)
