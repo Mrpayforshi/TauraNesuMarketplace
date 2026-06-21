@@ -230,7 +230,7 @@ export default async function HomePage() {
                         <p className={styles.listingDealer}>{dealer?.name || 'TauraNesu Dealer'}</p>
                       </div>
                       {phone ? (
-                        
+                        <a
                           href={`https://wa.me/${phone}`}
                           target="_blank"
                           rel="noopener noreferrer"
