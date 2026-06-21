@@ -158,7 +158,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 {/* CTA buttons */}
                 <div className={styles.ctaStack}>
                   {phone ? (
-                    
+                    <a
                       href={`https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I'm interested in the ${listing.year} ${listing.make} ${listing.model} listed on TauraNesu. Is it still available?`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
