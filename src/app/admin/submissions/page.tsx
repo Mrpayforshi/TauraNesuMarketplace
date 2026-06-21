@@ -559,6 +559,10 @@ function LeadRow({
 }
 
 // ─── Valuation modal ────────────────────────────────────────────────────────
+//
+// Sets the valuation AND advances status pending → valued in one PATCH to
+// the single submissions/[id] route (there is no separate /valuation
+// sub-route — the backend handles status + valuation fields together).
 
 function ValuationModal({
   submission,
@@ -596,10 +600,11 @@ function ValuationModal({
 
     setSaving(true);
     try {
-      const res = await authFetch(`/api/admin/submissions/${submission.id}/valuation`, {
+      const res = await authFetch(`/api/admin/submissions/${submission.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          status: 'valued',
           valuation_min_usd: minNum,
           valuation_max_usd: maxNum,
           valuation_notes: notes.trim() || undefined,
@@ -682,6 +687,10 @@ function ValuationModal({
 }
 
 // ─── Reject modal ───────────────────────────────────────────────────────────
+//
+// PATCHes the same submissions/[id] route with status: 'rejected' plus
+// rejection_reason — the backend requires rejection_reason whenever status
+// is set to 'rejected', and rejects the field name "reason" (not accepted).
 
 function RejectModal({
   submission,
@@ -706,10 +715,10 @@ function RejectModal({
     setError(null);
     setSaving(true);
     try {
-      const res = await authFetch(`/api/admin/submissions/${submission.id}/reject`, {
+      const res = await authFetch(`/api/admin/submissions/${submission.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason.trim() }),
+        body: JSON.stringify({ status: 'rejected', rejection_reason: reason.trim() }),
       });
       if (res.status === 401) {
         onUnauthorized();
