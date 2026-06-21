@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import styles from './new.module.css';
+import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 /* ── Constants (must match API validation) ── */
 const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'] as const;
@@ -94,7 +95,7 @@ export default function NewListingPage() {
     setSubmitting(true);
     setErrors({});
     try {
-      const res = await fetch('/api/dealer/listings', {
+      const res = await authFetch('/api/dealer/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -116,7 +117,7 @@ export default function NewListingPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 401) { router.push('/login'); return; }
+        if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
         throw new Error(data.error || 'Failed to create listing');
       }
       setListingId(data.id);
@@ -166,10 +167,11 @@ export default function NewListingPage() {
     try {
       const fd = new FormData();
       imageFiles.forEach(f => fd.append('images', f));
-      const res = await fetch(`/api/dealer/listings/${listingId}/images`, {
+      const res = await authFetch(`/api/dealer/listings/${listingId}/images`, {
         method: 'POST',
         body: fd,
       });
+      if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setUploadedImages(data.images || []);
@@ -188,16 +190,17 @@ export default function NewListingPage() {
     setPublishing(true);
     setPublishError('');
     try {
-      const res = await fetch(`/api/dealer/listings/${listingId}/status`, {
+      const res = await authFetch(`/api/dealer/listings/${listingId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'active' }),
+        body: JSON.stringify({ status: 'pending_review' }),
       });
+      if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Publish failed');
+      if (!res.ok) throw new Error(data.error || 'Submission failed');
       router.push('/dealer/dashboard');
     } catch (e: unknown) {
-      setPublishError(e instanceof Error ? e.message : 'Publish failed');
+      setPublishError(e instanceof Error ? e.message : 'Submission failed');
     } finally {
       setPublishing(false);
     }
@@ -463,4 +466,52 @@ export default function NewListingPage() {
                     ? <><span className={styles.btnSpinner} /> Uploading…</>
                     : imageFiles.length === 0
                       ? 'Skip to Publish →'
-                      :
+                      : <>Upload {imageFiles.length} Photo{imageFiles.length !== 1 ? 's' : ''} →</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Publish ── */}
+          {step === 'publish' && (
+            <div className={styles.card}>
+              <div className={styles.publishCenter}>
+                <div className={styles.publishIcon}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+                <h2 className={styles.publishTitle}>Ready to submit?</h2>
+                <p className={styles.publishSub}>
+                  {form.year} {form.make} {form.model} — your listing will go live once an admin reviews it.
+                  {uploadedImages.length > 0
+                    ? ` ${uploadedImages.length} photo${uploadedImages.length !== 1 ? 's' : ''} attached.`
+                    : ' No photos attached — you can add them later from your dashboard.'}
+                </p>
+
+                {publishError && (
+                  <div className={styles.errorBanner}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    {publishError}
+                  </div>
+                )}
+
+                <div className={styles.publishActions}>
+                  <button className={styles.draftBtn} onClick={handleSaveDraft} disabled={publishing}>
+                    Save as Draft
+                  </button>
+                  <button className={styles.publishBtn} onClick={handlePublish} disabled={publishing}>
+                    {publishing ? <><span className={styles.btnSpinner} /> Submitting…</> : 'Submit for Review'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </>
+  );
+}
