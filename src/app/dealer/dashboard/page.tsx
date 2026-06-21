@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import styles from './dashboard.module.css';
+import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 interface Listing {
   id: string;
@@ -45,6 +46,7 @@ function timeAgo(iso: string) {
 const STATUS_LABEL: Record<string, string> = {
   active: 'Active',
   pending: 'Pending',
+  pending_review: 'Pending Review',
   sold: 'Sold',
   archived: 'Archived',
 };
@@ -60,9 +62,10 @@ export default function DealerDashboard() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch(`/api/dealer/analytics?days=${period}`)
+    authFetch(`/api/dealer/analytics?days=${period}`)
       .then(async (res) => {
         if (res.status === 401) {
+          clearAccessToken();
           router.push('/login');
           return;
         }
@@ -78,11 +81,14 @@ export default function DealerDashboard() {
     if (!confirm('Archive this listing? It will no longer be visible to buyers.')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/dealer/listings/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/dealer/listings/${id}`, { method: 'DELETE' });
+      if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
       // Re-fetch analytics
-      const updated = await fetch(`/api/dealer/analytics?days=${period}`).then(r => r.json());
+      const analyticsRes = await authFetch(`/api/dealer/analytics?days=${period}`);
+      if (analyticsRes.status === 401) { clearAccessToken(); router.push('/login'); return; }
+      const updated = await analyticsRes.json();
       setAnalytics(updated);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Something went wrong');
