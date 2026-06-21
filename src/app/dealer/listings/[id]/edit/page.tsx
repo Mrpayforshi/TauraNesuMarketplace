@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import styles from './edit.module.css';
+import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 /* ── Constants ── */
 const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'] as const;
@@ -71,8 +72,8 @@ export default function EditListingPage() {
     if (!id) return;
     (async () => {
       try {
-        const res = await fetch(`/api/dealer/listings/${id}`);
-        if (res.status === 401) { router.push('/login'); return; }
+        const res = await authFetch(`/api/dealer/listings/${id}`);
+        if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
         if (res.status === 403) { router.push('/dealer/dashboard'); return; }
         if (!res.ok) throw new Error('Listing not found');
         const data = await res.json();
@@ -143,7 +144,7 @@ export default function EditListingPage() {
     setSaveSuccess(false);
     setErrors({});
     try {
-      const res = await fetch(`/api/dealer/listings/${id}`, {
+      const res = await authFetch(`/api/dealer/listings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -165,7 +166,7 @@ export default function EditListingPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 401) { router.push('/login'); return; }
+        if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
         throw new Error(data.error || 'Failed to save');
       }
       setSaveSuccess(true);
@@ -182,9 +183,10 @@ export default function EditListingPage() {
     setDeletingId(imageId);
     setImageError('');
     try {
-      const res = await fetch(`/api/dealer/listings/${id}/images/${imageId}`, {
+      const res = await authFetch(`/api/dealer/listings/${id}/images/${imageId}`, {
         method: 'DELETE',
       });
+      if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Delete failed');
@@ -236,10 +238,11 @@ export default function EditListingPage() {
     try {
       const fd = new FormData();
       newFiles.forEach(f => fd.append('images', f));
-      const res = await fetch(`/api/dealer/listings/${id}/images`, {
+      const res = await authFetch(`/api/dealer/listings/${id}/images`, {
         method: 'POST',
         body: fd,
       });
+      if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       // Merge new images in
