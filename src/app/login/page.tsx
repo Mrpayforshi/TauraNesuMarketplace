@@ -1,3 +1,5 @@
+// Repo path: src/app/login/page.tsx
+
 'use client';
 
 import { useState, ChangeEvent, FormEvent } from 'react';
@@ -49,9 +51,14 @@ export default function LoginPage() {
         setAccessToken(data.session);
       }
 
-      // Redirect based on role — admin goes to /admin, others to /dealer/dashboard
-      // For now redirect to listings; middleware will handle protected routes
-      router.push('/listings');
+      // Redirect based on the role the login API determined.
+      if (data.role === 'admin') {
+        router.push('/admin');
+      } else if (data.role === 'dealer') {
+        router.push('/dealer/dashboard');
+      } else {
+        router.push('/listings');
+      }
       router.refresh();
     } catch {
       setError('Network error — please check your connection.');
