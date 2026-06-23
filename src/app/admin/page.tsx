@@ -1,8 +1,11 @@
+// Repo path: src/app/admin/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authFetch, clearAccessToken } from '@/lib/client-auth';
 import styles from './admin-dashboard.module.css';
 
 interface Stats {
@@ -19,9 +22,13 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin/stats')
+    authFetch('/api/admin/stats')
       .then(async (res) => {
-        if (res.status === 401) { router.push('/login'); return; }
+        if (res.status === 401) {
+          clearAccessToken();
+          router.push('/login');
+          return;
+        }
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to load stats');
         setStats(data);
