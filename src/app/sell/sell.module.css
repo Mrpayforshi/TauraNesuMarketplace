@@ -302,6 +302,117 @@
 }
 .trustNote svg { color: var(--green); flex-shrink: 0; }
 
+/* ── Photo upload (step 3) ─────────────────────────────────── */
+.dropzone {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 20px;
+}
+.dropzone:hover {
+  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.03);
+}
+.dropzoneActive {
+  border-color: var(--blue);
+  background: rgba(26,86,219,0.08);
+}
+.dropzoneIcon {
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 12px;
+}
+.dropzoneText {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 4px;
+}
+.dropzoneLink {
+  color: var(--blue);
+  font-weight: 600;
+}
+.dropzoneHint {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.3);
+}
+
+.photoCountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.photoCount {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+}
+.photoCountWarn {
+  font-size: 0.78rem;
+  color: #fbbf24;
+  font-weight: 600;
+}
+.photoCountOk {
+  font-size: 0.78rem;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.thumbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.thumbRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(15,23,42,0.85);
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.thumbRemove:hover {
+  background: #dc2626;
+}
+.thumbBadge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(5,150,105,0.9);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 /* ── Errors ────────────────────────────────────────────────── */
 .error {
   font-size: 0.875rem;
