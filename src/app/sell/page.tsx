@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, FormEvent, DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import styles from './sell.module.css';
@@ -13,9 +13,15 @@ const MAKES = [
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1979 }, (_, i) => CURRENT_YEAR - i);
 
-type Step = 1 | 2 | 3;
+// Must match src/app/api/submissions/[id]/images/route.ts exactly
+const MIN_IMAGES = 4;
+const MAX_IMAGES = 20;
+const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
-interface FormData {
+type Step = 1 | 2 | 3 | 4;
+
+interface SellFormData {
   // Step 1 — Car details
   make: string;
   model: string;
@@ -30,14 +36,14 @@ interface FormData {
   // Step 2 — Pricing & description (asking_price optional, description maps to additional_notes)
   asking_price: string;
   additional_notes: string;
-  // Step 3 — Contact
+  // Step 4 — Contact
   seller_name: string;
   seller_phone: string;
   seller_whatsapp: string;
   seller_city: string;
 }
 
-const EMPTY: FormData = {
+const EMPTY: SellFormData = {
   make: '', model: '', year: '', mileage_km: '',
   transmission: '', fuel_type: '', colour: '', condition: '',
   intent: 'sell', known_issues: '',
@@ -45,7 +51,7 @@ const EMPTY: FormData = {
   seller_name: '', seller_phone: '', seller_whatsapp: '', seller_city: '',
 };
 
-function validate(data: FormData, step: Step): string | null {
+function validate(data: SellFormData, step: Step): string | null {
   if (step === 1) {
     if (!data.make) return 'Please select a make.';
     if (!data.model.trim()) return 'Please enter the model.';
@@ -56,7 +62,7 @@ function validate(data: FormData, step: Step): string | null {
     if (!data.colour.trim()) return 'Please enter the colour.';
     if (!data.condition) return 'Please select the condition.';
   }
-  if (step === 3) {
+  if (step === 4) {
     if (!data.seller_name.trim()) return 'Please enter your name.';
     if (!data.seller_phone.trim() || data.seller_phone.trim().length < 7) return 'Please enter a valid phone number.';
     if (!data.seller_city.trim()) return 'Please enter your city.';
@@ -64,20 +70,111 @@ function validate(data: FormData, step: Step): string | null {
   return null;
 }
 
+function validateFile(file: File): string | null {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return `"${file.name}" isn't a supported format. Use JPEG, PNG or WebP.`;
+  }
+  if (file.size > MAX_SIZE_BYTES) {
+    return `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)}MB — max is 5MB.`;
+  }
+  return null;
+}
+
 export default function SellPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [step, setStep] = useState<Step>(1);
-  const [form, setForm] = useState<FormData>(EMPTY);
+  const [form, setForm] = useState<SellFormData>(EMPTY);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Photos
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [imageError, setImageError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+
+  // Set once the submission record is created, so a retry of a failed
+  // photo upload doesn't create a duplicate submission.
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urls = images.map(file => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [images]);
 
   function update(e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
   }
 
+  function addFiles(fileList: FileList | File[]) {
+    const incoming = Array.from(fileList);
+    const errors: string[] = [];
+    const accepted: File[] = [];
+
+    for (const file of incoming) {
+      const fileErr = validateFile(file);
+      if (fileErr) { errors.push(fileErr); continue; }
+      accepted.push(file);
+    }
+
+    setImages(prev => {
+      const existingKeys = new Set(prev.map(f => `${f.name}-${f.size}`));
+      const deduped = accepted.filter(f => !existingKeys.has(`${f.name}-${f.size}`));
+      const room = Math.max(MAX_IMAGES - prev.length, 0);
+      const toAdd = deduped.slice(0, room);
+      if (deduped.length > toAdd.length) {
+        errors.push(`Maximum ${MAX_IMAGES} photos allowed — some files were skipped.`);
+      }
+      return [...prev, ...toAdd];
+    });
+
+    setImageError(errors[0] || '');
+  }
+
+  function removeImage(index: number) {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setImageError('');
+  }
+
+  function onFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) addFiles(e.target.files);
+    e.target.value = '';
+  }
+
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+  }
+
+  function onDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+
+  function onDragLeave(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+
   function next(e: FormEvent) {
     e.preventDefault();
+
+    if (step === 3) {
+      if (images.length < MIN_IMAGES) {
+        setImageError(`Please add at least ${MIN_IMAGES} photos (you have ${images.length}).`);
+        return;
+      }
+      setImageError('');
+      setStep(4);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const err = validate(form, step);
     if (err) { setError(err); return; }
     setStep(s => (s + 1) as Step);
@@ -92,39 +189,66 @@ export default function SellPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const err = validate(form, 3);
+    const err = validate(form, 4);
     if (err) { setError(err); return; }
     setLoading(true);
     setError('');
 
     try {
-      const payload = {
-        make: form.make,
-        model: form.model.trim(),
-        year: parseInt(form.year),
-        mileage_km: parseInt(form.mileage_km),
-        transmission: form.transmission,
-        fuel_type: form.fuel_type,
-        colour: form.colour.trim(),
-        condition: form.condition,
-        intent: form.intent,
-        known_issues: form.known_issues.trim() || null,
-        seller_name: form.seller_name.trim(),
-        seller_phone: form.seller_phone.trim(),
-        seller_whatsapp: form.seller_whatsapp.trim() || form.seller_phone.trim(),
-        seller_city: form.seller_city.trim(),
-        additional_notes: form.additional_notes.trim() || null,
-      };
+      let id = submissionId;
 
-      const res = await fetch('/api/submissions', {
+      // Only create the submission once — on a retry after a failed photo
+      // upload, reuse the existing id instead of inserting a duplicate row.
+      if (!id) {
+        const payload = {
+          make: form.make,
+          model: form.model.trim(),
+          year: parseInt(form.year),
+          mileage_km: parseInt(form.mileage_km),
+          transmission: form.transmission,
+          fuel_type: form.fuel_type,
+          colour: form.colour.trim(),
+          condition: form.condition,
+          intent: form.intent,
+          known_issues: form.known_issues.trim() || null,
+          seller_name: form.seller_name.trim(),
+          seller_phone: form.seller_phone.trim(),
+          seller_whatsapp: form.seller_whatsapp.trim() || form.seller_phone.trim(),
+          seller_city: form.seller_city.trim(),
+          additional_notes: form.additional_notes.trim() || null,
+        };
+
+        const res = await fetch('/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          setError(data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        const data = await res.json();
+        id = data.id;
+        setSubmissionId(id);
+      }
+
+      const photoData = new FormData();
+      images.forEach(file => photoData.append('images', file));
+
+      const imgRes = await fetch(`/api/submissions/${id}/images`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: photoData,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Something went wrong. Please try again.');
+      if (!imgRes.ok) {
+        const data = await imgRes.json();
+        setError(
+          (data.error || 'Photos failed to upload.') +
+          ' Your car details were saved — click Submit again to retry the photos.'
+        );
         return;
       }
 
@@ -136,7 +260,7 @@ export default function SellPage() {
     }
   }
 
-  const stepLabels = ['Car Details', 'Pricing & Notes', 'Your Contact'];
+  const stepLabels = ['Car Details', 'Pricing & Notes', 'Photos', 'Your Contact'];
 
   return (
     <>
@@ -343,13 +467,90 @@ export default function SellPage() {
                 {error && <p className={styles.error}>{error}</p>}
                 <div className={styles.actions}>
                   <button type="button" onClick={back} className={styles.backBtn}>← Back</button>
+                  <button type="submit" className={styles.nextBtn}>Next: Photos →</button>
+                </div>
+              </form>
+            )}
+
+            {/* ── STEP 3: Photos ── */}
+            {step === 3 && (
+              <form onSubmit={next} noValidate>
+                <h2 className={styles.sectionTitle}>Photos</h2>
+                <p className={styles.stepSub}>
+                  Add at least {MIN_IMAGES} clear photos — exterior (all sides), interior, and engine bay help us value your car accurately.
+                </p>
+
+                <div
+                  className={`${styles.dropzone} ${dragActive ? styles.dropzoneActive : ''}`}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <svg className={styles.dropzoneIcon} width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <p className={styles.dropzoneText}>
+                    Drag photos here or <span className={styles.dropzoneLink}>browse</span>
+                  </p>
+                  <p className={styles.dropzoneHint}>JPEG, PNG or WebP — max 5MB each</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                    multiple
+                    onChange={onFileInputChange}
+                    className={styles.srOnly}
+                  />
+                </div>
+
+                {imageError && <p className={styles.error}>{imageError}</p>}
+
+                {images.length > 0 && (
+                  <>
+                    <div className={styles.photoCountRow}>
+                      <span className={styles.photoCount}>
+                        {images.length} photo{images.length !== 1 ? 's' : ''} selected
+                      </span>
+                      <span className={images.length < MIN_IMAGES ? styles.photoCountWarn : styles.photoCountOk}>
+                        {images.length < MIN_IMAGES
+                          ? `${MIN_IMAGES - images.length} more required`
+                          : 'Ready ✓'}
+                      </span>
+                    </div>
+                    <div className={styles.thumbGrid}>
+                      {previews.map((src, i) => (
+                        <div key={i} className={styles.thumb}>
+                          <img src={src} alt={`Photo ${i + 1}`} className={styles.thumbImg} />
+                          <button
+                            type="button"
+                            className={styles.thumbRemove}
+                            onClick={() => removeImage(i)}
+                            aria-label="Remove photo"
+                          >
+                            ×
+                          </button>
+                          {i === 0 && <span className={styles.thumbBadge}>Cover</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {error && <p className={styles.error}>{error}</p>}
+                <div className={styles.actions}>
+                  <button type="button" onClick={back} className={styles.backBtn}>← Back</button>
                   <button type="submit" className={styles.nextBtn}>Next: Your Contact →</button>
                 </div>
               </form>
             )}
 
-            {/* ── STEP 3: Contact ── */}
-            {step === 3 && (
+            {/* ── STEP 4: Contact ── */}
+            {step === 4 && (
               <form onSubmit={submit} noValidate>
                 <h2 className={styles.sectionTitle}>Your Contact Details</h2>
                 <p className={styles.stepSub}>We'll use these to reach you about your submission. Not displayed publicly.</p>
@@ -381,6 +582,8 @@ export default function SellPage() {
                       onChange={update} className={styles.input} placeholder="Leave blank to use phone number" maxLength={20} />
                   </div>
                 </div>
+
+                <p className={styles.hint}>📷 {images.length} photo{images.length !== 1 ? 's' : ''} attached</p>
 
                 <div className={styles.trustNote}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
