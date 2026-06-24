@@ -2,15 +2,24 @@
 
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense, ChangeEvent, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { setAccessToken } from '@/lib/client-auth';
 import styles from './login.module.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Set when the person arrived via the "Dealer" entry point (Navbar /
+  // homepage card both link to /login?portal=dealer). Carries their intent
+  // through the shared login form so the redirect after sign-in honours
+  // *what they came here to do*, not just whatever the account's default
+  // priority role happens to be.
+  const portal = searchParams.get('portal');
+  const isDealerPortal = portal === 'dealer';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -51,8 +60,20 @@ export default function LoginPage() {
         setAccessToken(data.session);
       }
 
-      // Redirect based on the role the login API determined.
-      if (data.role === 'admin') {
+      if (isDealerPortal) {
+        // Came in through the Dealer entry point — honour that intent.
+        // isAdmin and isDealer are not mutually exclusive (an account can
+        // be both at once), so don't fall back to /admin just because the
+        // account also happens to carry the admin flag.
+        if (data.isDealer) {
+          router.push('/dealer/dashboard');
+        } else {
+          setError(
+            "This account isn't registered as a dealer. Sign in with your dealer account, or contact us to set one up."
+          );
+          return;
+        }
+      } else if (data.role === 'admin') {
         router.push('/admin');
       } else if (data.role === 'dealer') {
         router.push('/dealer/dashboard');
@@ -77,7 +98,9 @@ export default function LoginPage() {
           <div className={styles.panel}>
             <div className={styles.panelInner}>
               <div className={styles.panelLogo}>TauraNesu</div>
-              <h2 className={styles.panelHeading}>Zimbabwe's premium car marketplace</h2>
+              <h2 className={styles.panelHeading}>
+                {isDealerPortal ? 'Sign in to your dealer account' : "Zimbabwe's premium car marketplace"}
+              </h2>
               <ul className={styles.panelList}>
                 <li className={styles.panelItem}>
                   <span className={styles.panelCheck}>✓</span>
@@ -99,7 +122,7 @@ export default function LoginPage() {
           {/* Right panel — form */}
           <div className={styles.formSide}>
             <div className={styles.card}>
-              <h1 className={styles.title}>Sign in</h1>
+              <h1 className={styles.title}>{isDealerPortal ? 'Dealer sign in' : 'Sign in'}</h1>
               <p className={styles.sub}>
                 Don't have an account?{' '}
                 <Link href="/signup" className={styles.link}>Create one free</Link>
@@ -176,16 +199,19 @@ export default function LoginPage() {
 
               </form>
 
-              <div className={styles.divider}><span>or continue as</span></div>
-
-              <div className={styles.altLinks}>
-                <Link href="/dealer/dashboard" className={styles.altBtn}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                  </svg>
-                  Dealer Portal
-                </Link>
-              </div>
+              {!isDealerPortal && (
+                <>
+                  <div className={styles.divider}><span>or continue as</span></div>
+                  <div className={styles.altLinks}>
+                    <Link href="/login?portal=dealer" className={styles.altBtn}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                      </svg>
+                      Dealer Portal
+                    </Link>
+                  </div>
+                </>
+              )}
 
             </div>
           </div>
@@ -193,5 +219,18 @@ export default function LoginPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams() requires a Suspense boundary, or `next build` fails
+  // with "useSearchParams() should be wrapped in a suspense boundary" —
+  // the same class of bug as the middleware fix above: code that's valid
+  // in dev but breaks the production build. Wrapping here keeps that
+  // failure from ever reaching Vercel.
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
