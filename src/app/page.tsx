@@ -116,7 +116,7 @@ export default async function HomePage() {
                 </div>
                 <h3 className={styles.intentTitle}>I&apos;m a Dealer</h3>
                 <p className={styles.intentDesc}>Grow your business and reach more buyers.</p>
-                <Link href="/dealer/dashboard" className={styles.intentBtnTeal}>Dealer Portal →</Link>
+                <Link href="/login?portal=dealer" className={styles.intentBtnTeal}>Dealer Portal →</Link>
               </div>
             </div>
             <p className={styles.intentFootnote}>Your experience will be tailored to your choice.</p>
