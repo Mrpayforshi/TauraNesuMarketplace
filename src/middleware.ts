@@ -1,8 +1,8 @@
 // Repo path: src/middleware.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from './lib/supabase';
 import { createAdminClient } from './lib/supabase';
+import { getAuthUser } from './lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,6 +21,18 @@ export async function middleware(request: NextRequest) {
   // if it gets a 401 (see e.g. src/app/admin/dealers/page.tsx,
   // src/app/dealer/dashboard/page.tsx). The API routes below remain the
   // real enforcement point.
+  //
+  // IMPORTANT — never call createServerSupabaseClient() from this file.
+  // That function (src/lib/supabase.ts) reads the incoming Authorization
+  // header via next/headers' headers(), which only works inside a Server
+  // Component / Route Handler request scope. Middleware runs in the Edge
+  // Runtime *before* that scope exists, so calling it here throws
+  // "Error: `headers` was called outside a request scope" on every request
+  // that has a Bearer token — i.e. every real dealer request. This was the
+  // root cause of the dealer API returning hard failures even for a
+  // correctly authenticated dealer. Use getAuthUser(request) instead — it
+  // takes the NextRequest/Request directly and never touches next/headers,
+  // so it's safe in both middleware and route handlers.
 
   // ── ADMIN API ROUTES ────────────────────────────────────────────────────────
   if (pathname.startsWith('/api/admin/')) {
@@ -51,12 +63,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.slice(7);
     try {
-      const supabase = createServerSupabaseClient();
-      const { data, error } = await supabase.auth.getUser(token);
+      // getAuthUser reads request.headers directly — no next/headers,
+      // safe to call from middleware. See note above.
+      const user = await getAuthUser(request);
 
-      if (error || !data.user) {
+      if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     } catch {
