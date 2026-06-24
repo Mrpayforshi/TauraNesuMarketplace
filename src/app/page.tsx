@@ -373,6 +373,17 @@ export default async function HomePage() {
 
             <div className={styles.footerBottom}>
               <p>© 2026 TauraNesu. All rights reserved.</p>
+              <Link
+                href="/admin-login"
+                className={styles.footerAdminLink}
+                aria-label="Admin sign in"
+                title="Admin"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </Link>
             </div>
           </div>
         </footer>
