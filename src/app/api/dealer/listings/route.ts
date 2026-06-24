@@ -194,9 +194,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: typeValidation.error }, { status: 400 });
     }
 
-    const supabase = createServerSupabaseClient();
+   const supabase = createServerSupabaseClient();
 
-    // Check listing limit
+// TEMP DEBUG — remove after diagnosing RLS issue
+const { data: debugUid, error: debugErr } = await supabase.rpc('current_uid_debug');
+console.log('DEBUG auth.uid() seen by Postgres:', debugUid, debugErr);
+
+// Check listing limit
     const { count, error: countError } = await supabase
       .from('listings')
       .select('id', { count: 'exact' })
