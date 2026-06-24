@@ -42,7 +42,7 @@ export default function Navbar() {
 
         <div className={styles.actions}>
           <Link href="/login" className={styles.signIn}>Sign In</Link>
-          <Link href="/dealer/dashboard" className={styles.dealerBtn}>Dealer</Link>
+          <Link href="/login?portal=dealer" className={styles.dealerBtn}>Dealer</Link>
           <Link href="/sell" className={styles.sellBtn}>Sell My Car</Link>
         </div>
       </div>
