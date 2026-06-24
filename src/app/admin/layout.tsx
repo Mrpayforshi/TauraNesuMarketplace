@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { clearAccessToken } from '@/lib/client-auth';
 import styles from './admin-layout.module.css';
 
 const NAV_ITEMS = [
@@ -58,6 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
+      clearAccessToken();
       router.push('/login');
     }
   }
