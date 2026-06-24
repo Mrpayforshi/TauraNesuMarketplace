@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient as createSSRClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -25,10 +24,26 @@ export function createServerClient() {
 /**
  * Creates an authenticated Supabase client for protected routes.
  *
+ * This app has no Supabase auth cookie — every client request authenticates
+ * via a Bearer token stored client-side in localStorage (see
+ * src/lib/client-auth.ts) and attached by authFetch(). There is never a
+ * session to restore from cookies, so a cookie-based client has no identity
+ * attached and every RLS policy that checks auth.uid() silently blocks it.
+ *
+ * This reads the Authorization header straight off the incoming request
+ * (via next/headers — works in any Route Handler without the request object
+ * being passed in) and forwards that same token to PostgREST, so RLS
+ * policies evaluate auth.uid() correctly for the calling user.
+ *
+ * If there's no Bearer token on the request (e.g. mid-login, before a token
+ * exists yet), this behaves like a plain anon client — auth calls like
+ * signInWithPassword() / signUp() still work and keep their session in
+ * memory for the rest of that request, exactly as before.
+ *
  * USE THIS FOR:
  * - API routes that require user authentication
  * - Validating user sessions via Bearer token
- * - Dealer-scoped queries with RLS enforcement
+ * - Dealer-scoped or buyer-scoped queries with RLS enforcement
  * - Any authenticated data operations
  *
  * DO NOT USE THIS FOR:
@@ -36,23 +51,18 @@ export function createServerClient() {
  * - Public routes without authentication (use createServerClient instead)
  */
 export function createServerSupabaseClient() {
-  const cookieStore = cookies();
+  const headerList = headers();
+  const authHeader = headerList.get('authorization') ?? headerList.get('Authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
 
-  return createSSRClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch (error) {
-          // Handle errors silently
-        }
-      },
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
     },
+    ...(token
+      ? { global: { headers: { Authorization: `Bearer ${token}` } } }
+      : {}),
   });
 }
 
