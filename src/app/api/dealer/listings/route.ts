@@ -251,7 +251,17 @@ console.log('DEBUG auth.uid() seen by Postgres:', debugUid, debugErr);
       .single();
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: insertError.message,
+          debug: {
+            debugUid,
+            debugErr: debugErr ? debugErr.message : null,
+            dealerIdSent: dealer.id,
+          },
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(createdListing, { status: 201 });
