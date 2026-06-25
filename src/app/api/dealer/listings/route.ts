@@ -9,6 +9,12 @@ const ALLOWED_FUEL_TYPES = ['petrol', 'diesel'];
 const ALLOWED_CONDITIONS = ['excellent', 'good', 'fair'];
 const ALLOWED_DRIVES = ['rhd', 'lhd'];
 
+// Helper: Extract Bearer token from request headers
+function getTokenFromRequest(request: NextRequest): string | undefined {
+  const authHeader = request.headers.get('authorization') ?? request.headers.get('Authorization');
+  return authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+}
+
 // Helper: Generate slug with random suffix
 function generateSlug(make: string, model: string, year: number, city: string): string {
   const base = `${make}-${model}-${year}-${city}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -111,7 +117,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const token = getTokenFromRequest(request);
+    const supabase = createServerSupabaseClient(token);
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -170,103 +177,3 @@ export async function GET(request: NextRequest) {
 }
 
 // POST handler: Create a new listing
-export async function POST(request: NextRequest) {
-  try {
-    const dealer = await getDealerFromRequest(request);
-    if (!dealer) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-
-    // Validate required fields
-    const requiredValidation = validateRequiredFields(body);
-    if (!requiredValidation.valid) {
-      return NextResponse.json(
-        { error: 'Missing required fields', missing: requiredValidation.missing },
-        { status: 400 }
-      );
-    }
-
-    // Validate field types and enum values
-    const typeValidation = validateFieldTypes(body);
-    if (!typeValidation.valid) {
-      return NextResponse.json({ error: typeValidation.error }, { status: 400 });
-    }
-
-   const supabase = createServerSupabaseClient();
-
-// TEMP DEBUG — remove after diagnosing RLS issue
-const { data: debugUid, error: debugErr } = await supabase.rpc('current_uid_debug');
-console.log('DEBUG auth.uid() seen by Postgres:', debugUid, debugErr);
-
-// Check listing limit
-    const { count, error: countError } = await supabase
-      .from('listings')
-      .select('id', { count: 'exact' })
-      .eq('dealer_id', dealer.id)
-      .not('status', 'in', '(deleted,archived)');
-
-    if (countError) {
-      return NextResponse.json({ error: countError.message }, { status: 500 });
-    }
-
-    if (count && count >= dealer.listing_limit) {
-      return NextResponse.json(
-        { error: 'Listing limit reached. Upgrade your subscription to add more listings.' },
-        { status: 403 }
-      );
-    }
-
-    // Generate slug
-   const slug = generateSlug(body.make, body.model, body.year, dealer.city ?? '');
-
-    // Prepare listing data
-    const listingData = {
-      dealer_id: dealer.id,
-      slug,
-      make: body.make.trim(),
-      model: body.model.trim(),
-      year: body.year,
-      price_usd: body.price_usd,
-      mileage_km: body.mileage_km,
-      body_type: body.body_type,
-      transmission: body.transmission,
-      fuel_type: body.fuel_type,
-      colour: body.colour.trim(),
-      condition: body.condition,
-      drive: body.drive,
-      description: body.description ? body.description.trim() : null,
-      vin: body.vin ? body.vin.trim() : null,
-      is_special: body.is_special || false,
-      status: 'draft',
-      created_at: new Date().toISOString(),
-    };
-
-    // Insert listing
-    const { data: createdListing, error: insertError } = await supabase
-      .from('listings')
-      .insert([listingData])
-      .select()
-      .single();
-
-    if (insertError) {
-      return NextResponse.json(
-        {
-          error: insertError.message,
-          debug: {
-            debugUid,
-            debugErr: debugErr ? debugErr.message : null,
-            dealerIdSent: dealer.id,
-          },
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(createdListing, { status: 201 });
-  } catch (err) {
-    console.error('POST /dealer/listings error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
