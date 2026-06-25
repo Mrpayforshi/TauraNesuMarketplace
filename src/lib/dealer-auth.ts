@@ -24,8 +24,13 @@ export async function getDealerFromRequest(
     return null;
   }
 
-  // Step 2: Query the dealers table for an active dealer matching this user
-  const supabase = createServerSupabaseClient();
+  // Step 2: Extract the Bearer token directly from the request headers
+  // (ground truth — do not rely on next/headers here)
+  const authHeader = request.headers.get('authorization') ?? request.headers.get('Authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+
+  // Step 3: Query the dealers table for an active dealer matching this user
+  const supabase = createServerSupabaseClient(token);
   const { data, error } = await supabase
     .from('dealers')
     .select('*')
@@ -33,11 +38,11 @@ export async function getDealerFromRequest(
     .eq('status', 'active')
     .single();
 
-  // Step 3: If no dealer row is found or there's an error, return null
+  // Step 4: If no dealer row is found or there's an error, return null
   if (error || !data) {
     return null;
   }
 
-  // Step 4: Return the dealer row
+  // Step 5: Return the dealer row
   return data as Dealer;
 }
