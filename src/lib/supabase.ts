@@ -30,15 +30,20 @@ export function createServerClient() {
  * session to restore from cookies, so a cookie-based client has no identity
  * attached and every RLS policy that checks auth.uid() silently blocks it.
  *
- * This reads the Authorization header straight off the incoming request
- * (via next/headers — works in any Route Handler without the request object
- * being passed in) and forwards that same token to PostgREST, so RLS
- * policies evaluate auth.uid() correctly for the calling user.
+ * Pass the Bearer token explicitly via the `token` argument whenever you
+ * have access to the raw `Request`/`NextRequest` object (e.g.
+ * `request.headers.get('authorization')`). This is the reliable path.
  *
- * If there's no Bearer token on the request (e.g. mid-login, before a token
- * exists yet), this behaves like a plain anon client — auth calls like
- * signInWithPassword() / signUp() still work and keep their session in
- * memory for the rest of that request, exactly as before.
+ * If `token` is omitted, this falls back to reading the Authorization
+ * header via `next/headers`. That fallback exists for compatibility with
+ * any caller that hasn't been updated yet, but it is NOT guaranteed to see
+ * the same header data as the `request` parameter in every execution
+ * context — prefer passing `token` explicitly wherever possible.
+ *
+ * If there's no Bearer token resolved at all (e.g. mid-login, before a
+ * token exists yet), this behaves like a plain anon client — auth calls
+ * like signInWithPassword() / signUp() still work and keep their session
+ * in memory for the rest of that request, exactly as before.
  *
  * USE THIS FOR:
  * - API routes that require user authentication
@@ -50,18 +55,22 @@ export function createServerClient() {
  * - Admin operations or storage uploads (use createAdminClient instead)
  * - Public routes without authentication (use createServerClient instead)
  */
-export function createServerSupabaseClient() {
-  const headerList = headers();
-  const authHeader = headerList.get('authorization') ?? headerList.get('Authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+export function createServerSupabaseClient(token?: string) {
+  let resolvedToken = token;
+
+  if (!resolvedToken) {
+    const headerList = headers();
+    const authHeader = headerList.get('authorization') ?? headerList.get('Authorization');
+    resolvedToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  }
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
-    ...(token
-      ? { global: { headers: { Authorization: `Bearer ${token}` } } }
+    ...(resolvedToken
+      ? { global: { headers: { Authorization: `Bearer ${resolvedToken}` } } }
       : {}),
   });
 }
