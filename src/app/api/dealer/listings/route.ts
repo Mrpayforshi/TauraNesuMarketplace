@@ -177,3 +177,103 @@ export async function GET(request: NextRequest) {
 }
 
 // POST handler: Create a new listing
+export async function POST(request: NextRequest) {
+  try {
+    const dealer = await getDealerFromRequest(request);
+    if (!dealer) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Validate required fields
+    const requiredCheck = validateRequiredFields(body);
+    if (!requiredCheck.valid) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${requiredCheck.missing?.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate field types/values
+    const typeCheck = validateFieldTypes(body);
+    if (!typeCheck.valid) {
+      return NextResponse.json({ error: typeCheck.error }, { status: 400 });
+    }
+
+    const token = getTokenFromRequest(request);
+    const supabase = createServerSupabaseClient(token);
+
+    // TEMP DEBUG: confirm what auth.uid() resolves to at this exact point
+    const { data: debugUid, error: debugErr } = await supabase.rpc('current_uid_debug');
+
+    // Enforce dealer's listing limit (only count non-deleted/archived listings)
+    const { count: activeCount, error: countError } = await supabase
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('dealer_id', dealer.id)
+      .not('status', 'in', '(deleted,archived)');
+
+    if (countError) {
+      return NextResponse.json(
+        { error: countError.message, debug: { debugUid, debugErr, dealerIdSent: dealer.id } },
+        { status: 500 }
+      );
+    }
+
+    if ((activeCount ?? 0) >= dealer.listing_limit) {
+      return NextResponse.json(
+        {
+          error: `Listing limit reached (${dealer.listing_limit}). Upgrade your plan or archive an existing listing.`,
+          debug: { debugUid, debugErr, dealerIdSent: dealer.id },
+        },
+        { status: 403 }
+      );
+    }
+
+    const slug = generateSlug(
+      body.make as string,
+      body.model as string,
+      body.year as number,
+      dealer.city ?? 'zw'
+    );
+
+    const insertPayload = {
+      dealer_id: dealer.id,
+      make: (body.make as string).trim(),
+      model: (body.model as string).trim(),
+      year: body.year as number,
+      price_usd: body.price_usd as number,
+      mileage_km: body.mileage_km as number,
+      body_type: body.body_type as string,
+      transmission: body.transmission as string,
+      fuel_type: body.fuel_type as string,
+      colour: (body.colour as string).trim(),
+      condition: body.condition as string,
+      drive: body.drive as string,
+      description: (body.description as string | undefined) ?? null,
+      vin: (body.vin as string | undefined) ?? null,
+      is_special: (body.is_special as boolean | undefined) ?? false,
+      slug,
+      status: 'pending_review' as const,
+    };
+
+    const { data: listing, error: insertError } = await supabase
+      .from('listings')
+      .insert(insertPayload)
+      .select('*')
+      .single();
+
+    if (insertError) {
+      return NextResponse.json(
+        { error: insertError.message, debug: { debugUid, debugErr, dealerIdSent: dealer.id } },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ listing, debug: { debugUid, debugErr, dealerIdSent: dealer.id } }, { status: 201 });
+  } catch (err) {
+    console.error('POST /dealer/listings error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
