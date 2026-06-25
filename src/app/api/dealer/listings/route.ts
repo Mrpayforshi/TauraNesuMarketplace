@@ -204,9 +204,6 @@ export async function POST(request: NextRequest) {
     const token = getTokenFromRequest(request);
     const supabase = createServerSupabaseClient(token);
 
-    // TEMP DEBUG: confirm what auth.uid() resolves to at this exact point
-    const { data: debugUid, error: debugErr } = await supabase.rpc('current_uid_debug');
-
     // Enforce dealer's listing limit (only count non-deleted/archived listings)
     const { count: activeCount, error: countError } = await supabase
       .from('listings')
@@ -215,18 +212,12 @@ export async function POST(request: NextRequest) {
       .not('status', 'in', '(deleted,archived)');
 
     if (countError) {
-      return NextResponse.json(
-        { error: countError.message, debug: { debugUid, debugErr, dealerIdSent: dealer.id } },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: countError.message }, { status: 500 });
     }
 
     if ((activeCount ?? 0) >= dealer.listing_limit) {
       return NextResponse.json(
-        {
-          error: `Listing limit reached (${dealer.listing_limit}). Upgrade your plan or archive an existing listing.`,
-          debug: { debugUid, debugErr, dealerIdSent: dealer.id },
-        },
+        { error: `Listing limit reached (${dealer.listing_limit}). Upgrade your plan or archive an existing listing.` },
         { status: 403 }
       );
     }
@@ -265,13 +256,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message, debug: { debugUid, debugErr, dealerIdSent: dealer.id } },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ listing, debug: { debugUid, debugErr, dealerIdSent: dealer.id } }, { status: 201 });
+    return NextResponse.json({ listing }, { status: 201 });
   } catch (err) {
     console.error('POST /dealer/listings error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
