@@ -115,12 +115,20 @@ export default function DealerDashboard() {
               <h1 className={styles.heading}>Dealer Dashboard</h1>
               <p className={styles.sub}>Manage your listings and track performance</p>
             </div>
-            <Link href="/dealer/listings/new" className={styles.newBtn}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              New Listing
-            </Link>
+            <div className={styles.headerActions}>
+              <Link href="/dealer/leads" className={styles.leadsBtn}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                View Leads
+              </Link>
+              <Link href="/dealer/listings/new" className={styles.newBtn}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                New Listing
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -165,7 +173,7 @@ export default function DealerDashboard() {
                   <div className={styles.statLabel}>Active Listings</div>
                 </div>
 
-                <div className={styles.statCard}>
+                <Link href="/dealer/leads" className={`${styles.statCard} ${styles.statCardLink}`}>
                   <div className={styles.statIcon} data-color="green">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -173,7 +181,8 @@ export default function DealerDashboard() {
                   </div>
                   <div className={styles.statValue}>{analytics.leads_received}</div>
                   <div className={styles.statLabel}>Leads ({period}d)</div>
-                </div>
+                  <span className={styles.statCardCta}>View leads →</span>
+                </Link>
 
                 <div className={styles.statCard}>
                   <div className={styles.statIcon} data-color="orange">
