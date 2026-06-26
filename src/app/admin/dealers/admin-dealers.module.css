@@ -15,6 +15,27 @@
 
 .sub { color: rgba(255,255,255,0.55); margin-top: 0.25rem; font-size: 0.92rem; }
 
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.addBtn {
+  background: var(--blue);
+  border: none;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.addBtn:hover { opacity: 0.85; }
+
 .body { padding: 2rem 2.5rem; }
 
 /* ── Tabs ── */
