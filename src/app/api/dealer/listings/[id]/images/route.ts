@@ -5,7 +5,7 @@ import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase';
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES_PER_LISTING = 20;
-const BUCKET_NAME = 'listings-images';
+const BUCKET_NAME = 'listing-images';
 
 interface ImageRow {
   id: string;
