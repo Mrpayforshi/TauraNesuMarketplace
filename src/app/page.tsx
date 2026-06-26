@@ -5,12 +5,15 @@ import styles from './home.module.css';
 
 async function getLatestListings() {
   const supabase = createServerClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('listings')
-    .select('id, title, make, model, year, price, body_type, slug, images, dealers(name, phone)')
+    .select('id, make, model, year, price_usd, body_type, slug, primary_image_url, dealers(name, phone)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6);
+  if (error) {
+    console.error('getLatestListings error:', error.message);
+  }
   return data || [];
 }
 
@@ -203,7 +206,7 @@ export default async function HomePage() {
               ) : (
                 listings.map((listing: any) => {
                   const dealer = Array.isArray(listing.dealers) ? listing.dealers[0] : listing.dealers;
-                  const firstImg = Array.isArray(listing.images) ? listing.images[0] : null;
+                  const firstImg = listing.primary_image_url || null;
                   const phone = dealer?.phone?.replace(/\D/g, '') || '';
                   return (
                     <div key={listing.id} className={styles.listingCard}>
@@ -212,7 +215,7 @@ export default async function HomePage() {
                           <span className={styles.bodyBadge}>{listing.body_type}</span>
                         )}
                         {firstImg ? (
-                          <img src={firstImg} alt={listing.title} className={styles.listingImg} />
+                          <img src={firstImg} alt={`${listing.make} ${listing.model} ${listing.year}`} className={styles.listingImg} />
                         ) : (
                           <div className={styles.listingImgPlaceholder}>
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5">
@@ -226,7 +229,7 @@ export default async function HomePage() {
                       </Link>
                       <div className={styles.listingBody}>
                         <p className={styles.listingTitle}>{listing.make} {listing.model} {listing.year}</p>
-                        <p className={styles.listingPrice}>${listing.price?.toLocaleString()}</p>
+                        <p className={styles.listingPrice}>${listing.price_usd?.toLocaleString()}</p>
                         <p className={styles.listingDealer}>{dealer?.name || 'TauraNesu Dealer'}</p>
                       </div>
                       {phone ? (
