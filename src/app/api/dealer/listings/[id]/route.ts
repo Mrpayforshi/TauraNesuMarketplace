@@ -220,3 +220,55 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+// DELETE handler: Soft-delete a listing (dealer-owned)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const dealer = await getDealerFromRequest(request);
+    if (!dealer) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = params;
+
+    const supabase = createServerSupabaseClient();
+
+    // Fetch the listing to confirm it exists and belongs to this dealer
+    const { data: listing, error: fetchError } = await supabase
+      .from('listings')
+      .select('*')
+      .eq('id', id)
+      .eq('dealer_id', dealer.id)
+      .single();
+
+    if (fetchError || !listing) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+    }
+
+    if (listing.status === 'deleted') {
+      return NextResponse.json({ error: 'Listing is already deleted' }, { status: 400 });
+    }
+
+    // Soft delete: flip status rather than removing the row.
+    // RLS only grants dealers UPDATE on their own listings (no DELETE policy),
+    // and 'deleted' is already an allowed value in listings_status_check.
+    const { data: deletedListing, error: updateError } = await supabase
+      .from('listings')
+      .update({ status: 'deleted' })
+      .eq('id', id)
+      .eq('dealer_id', dealer.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json(deletedListing, { status: 200 });
+  } catch (err) {
+    console.error('DELETE /dealer/listings/[id] error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
