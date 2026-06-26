@@ -123,10 +123,19 @@ function LoginForm() {
           <div className={styles.formSide}>
             <div className={styles.card}>
               <h1 className={styles.title}>{isDealerPortal ? 'Dealer sign in' : 'Sign in'}</h1>
-              <p className={styles.sub}>
-                Don't have an account?{' '}
-                <Link href="/signup" className={styles.link}>Create one free</Link>
-              </p>
+              {isDealerPortal ? (
+                <p className={styles.sub}>
+                  Dealer accounts are created by TauraNesu —{' '}
+                  <a href="mailto:REPLACE_ME@tauranesu.example" className={styles.link}>
+                    contact us to get set up
+                  </a>.
+                </p>
+              ) : (
+                <p className={styles.sub}>
+                  Don't have an account?{' '}
+                  <Link href="/signup" className={styles.link}>Create one free</Link>
+                </p>
+              )}
 
               <form onSubmit={handleSubmit} noValidate className={styles.form}>
 
