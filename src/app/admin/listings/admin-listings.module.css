@@ -15,6 +15,72 @@
 
 .sub { color: rgba(255,255,255,0.55); margin-top: 0.25rem; font-size: 0.92rem; }
 
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.addBtn {
+  background: var(--blue);
+  border: none;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.addBtn:hover { opacity: 0.85; }
+
+.modalInput, .modalSelect {
+  width: 100%;
+  background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+}
+.modalInput:focus, .modalSelect:focus { outline: none; border-color: var(--blue); }
+.modalSelect option { background: var(--navy); color: #fff; }
+
+.modalGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+.chipGroup { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.chip {
+  background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 7px;
+  transition: all 0.15s;
+}
+.chip:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+.chipActive { background: rgba(26,86,219,0.18); border-color: var(--blue); color: #fff; }
+
+.modalSaveBtn {
+  background: var(--blue);
+  border: none;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  transition: opacity 0.15s;
+}
+.modalSaveBtn:hover { opacity: 0.85; }
+.modalSaveBtn:disabled { opacity: 0.5; cursor: default; }
+
 .body { padding: 2rem 2.5rem; }
 
 /* ── Tabs ── */
