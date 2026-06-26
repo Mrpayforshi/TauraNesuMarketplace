@@ -133,6 +133,48 @@ function validateFieldTypes(body: Record<string, unknown>): { valid: boolean; er
   return { valid: true };
 }
 
+// GET handler: Fetch a single listing owned by this dealer, with images
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const dealer = await getDealerFromRequest(request);
+    if (!dealer) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = params;
+
+    const supabase = createServerSupabaseClient();
+
+    const { data: listing, error: fetchError } = await supabase
+      .from('listings')
+      .select(
+        `
+        *,
+        listing_images (
+          id,
+          image_url,
+          display_order
+        )
+        `
+      )
+      .eq('id', id)
+      .eq('dealer_id', dealer.id)
+      .single();
+
+    if (fetchError || !listing) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ listing }, { status: 200 });
+  } catch (err) {
+    console.error('GET /dealer/listings/[id] error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // PATCH handler: Update a listing
 export async function PATCH(
   request: NextRequest,
