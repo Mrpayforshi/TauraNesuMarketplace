@@ -71,29 +71,53 @@ let body: Record<string, any>; // request body shape is validated manually below
       );
     }
 
-    // Step 4: Check for existing leads row
+    // Step 4: Check for an existing leads row.
+    // A row with action = null is just a pending assignment (dealer hasn't
+    // decided yet) — that's the normal case for a lead sitting in "New" and
+    // must NOT be treated as "already acted on". Only a row with a non-null
+    // action represents a real prior decision.
     const { data: existingLead, error: leadCheckError } = await supabase
       .from('leads')
-      .select('id')
+      .select('id, action')
       .eq('dealer_id', dealer.id)
       .eq('submission_id', submissionId)
-      .single();
+      .maybeSingle();
 
-    if (existingLead) {
+    if (leadCheckError) {
+      return NextResponse.json(
+        { error: 'Failed to check existing lead' },
+        { status: 500 }
+      );
+    }
+
+    if (existingLead && existingLead.action !== null) {
       return NextResponse.json(
         { error: 'You have already acted on this submission' },
         { status: 409 }
       );
     }
 
-    // Step 5: Insert into leads table
-    const { error: insertError } = await supabase.from('leads').insert({
-      dealer_id: dealer.id,
-      submission_id: submissionId,
-      action,
-    });
+    // Step 5: Record the action. If a placeholder row already exists
+    // (action = null, created when the lead was assigned to this dealer),
+    // update it rather than inserting — the table has a UNIQUE
+    // (dealer_id, submission_id) constraint, so a fresh insert here would
+    // fail with a conflict instead of recording the decision.
+    const leadWriteError = existingLead
+      ? (
+          await supabase
+            .from('leads')
+            .update({ action })
+            .eq('id', existingLead.id)
+        ).error
+      : (
+          await supabase.from('leads').insert({
+            dealer_id: dealer.id,
+            submission_id: submissionId,
+            action,
+          })
+        ).error;
 
-    if (insertError) {
+    if (leadWriteError) {
       return NextResponse.json(
         { error: 'Failed to record action' },
         { status: 500 }
