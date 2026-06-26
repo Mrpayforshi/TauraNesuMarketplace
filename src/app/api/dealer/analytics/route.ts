@@ -59,11 +59,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Step 3b: Get listings performance
+    // Step 3b: Get listings performance (exclude soft-deleted listings)
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
       .select('id, make, model, year, price_usd, status, created_at')
       .eq('dealer_id', dealer.id)
+      .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
     if (listingsError) {
