@@ -46,6 +46,17 @@ export default function AdminDealersPage() {
   const [suspendReason, setSuspendReason] = useState('');
   const [suspendSaving, setSuspendSaving] = useState(false);
 
+  const [showAddDealer, setShowAddDealer] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addContactName, setAddContactName] = useState('');
+  const [addPhone, setAddPhone] = useState('');
+  const [addCity, setAddCity] = useState('');
+  const [addTier, setAddTier] = useState<string>('basic');
+  const [addLimit, setAddLimit] = useState('20');
+  const [addNotes, setAddNotes] = useState('');
+  const [addError, setAddError] = useState('');
+  const [addSaving, setAddSaving] = useState(false);
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -156,11 +167,67 @@ export default function AdminDealersPage() {
     }
   }
 
+  function openAddDealer() {
+    setAddName('');
+    setAddContactName('');
+    setAddPhone('');
+    setAddCity('');
+    setAddTier('basic');
+    setAddLimit('20');
+    setAddNotes('');
+    setAddError('');
+    setShowAddDealer(true);
+  }
+
+  async function saveAddDealer() {
+    if (!addName.trim()) {
+      setAddError('Dealer name is required.');
+      return;
+    }
+    const limitNum = parseInt(addLimit, 10);
+    if (!Number.isInteger(limitNum) || limitNum < 0) {
+      setAddError('Listing limit must be a non-negative whole number.');
+      return;
+    }
+    setAddSaving(true);
+    setAddError('');
+    try {
+      const res = await authFetch('/api/admin/dealers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: addName.trim(),
+          contact_name: addContactName.trim() || undefined,
+          phone: addPhone.trim() || undefined,
+          city: addCity.trim() || undefined,
+          subscription_tier: addTier,
+          listing_limit: limitNum,
+          notes: addNotes.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create dealer');
+      setDealers(prev => [data.dealer, ...prev]);
+      setShowAddDealer(false);
+    } catch (e) {
+      setAddError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setAddSaving(false);
+    }
+  }
+
   return (
     <main className={styles.root}>
       <div className={styles.header}>
-        <h1 className={styles.heading}>Dealers</h1>
-        <p className={styles.sub}>Approve new dealers, manage tiers, and suspend accounts</p>
+        <div className={styles.headerRow}>
+          <div>
+            <h1 className={styles.heading}>Dealers</h1>
+            <p className={styles.sub}>Approve new dealers, manage tiers, and suspend accounts</p>
+          </div>
+          <button type="button" className={styles.addBtn} onClick={openAddDealer}>
+            + Add Dealer
+          </button>
+        </div>
       </div>
 
       <div className={styles.body}>
@@ -353,6 +420,115 @@ export default function AdminDealersPage() {
               </button>
               <button type="button" className={styles.modalDangerBtn} onClick={confirmSuspend} disabled={suspendSaving}>
                 {suspendSaving ? 'Suspending…' : 'Suspend dealer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddDealer && (
+        <div className={styles.modalOverlay} onClick={() => !addSaving && setShowAddDealer(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Add Dealer</h2>
+            <p className={styles.modalSub}>
+              Creates the dealer immediately as <strong>active</strong> — they can submit listings right away.
+            </p>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addName">Dealer name *</label>
+              <input
+                id="addName"
+                type="text"
+                className={styles.modalInput}
+                value={addName}
+                onChange={e => setAddName(e.target.value)}
+                placeholder="e.g. Harare Premium Motors"
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addContactName">Contact name</label>
+              <input
+                id="addContactName"
+                type="text"
+                className={styles.modalInput}
+                value={addContactName}
+                onChange={e => setAddContactName(e.target.value)}
+                placeholder="Primary contact at the dealership"
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addPhone">Phone</label>
+              <input
+                id="addPhone"
+                type="text"
+                className={styles.modalInput}
+                value={addPhone}
+                onChange={e => setAddPhone(e.target.value)}
+                placeholder="+263…"
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addCity">City</label>
+              <input
+                id="addCity"
+                type="text"
+                className={styles.modalInput}
+                value={addCity}
+                onChange={e => setAddCity(e.target.value)}
+                placeholder="e.g. Harare"
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>Subscription tier</label>
+              <div className={styles.chipGroup}>
+                {TIERS.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`${styles.chip} ${addTier === t ? styles.chipActive : ''}`}
+                    onClick={() => setAddTier(t)}
+                  >
+                    {t[0].toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addLimit">Listing limit</label>
+              <input
+                id="addLimit"
+                type="number"
+                min="0"
+                className={styles.modalInput}
+                value={addLimit}
+                onChange={e => setAddLimit(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="addNotes">Notes</label>
+              <textarea
+                id="addNotes"
+                rows={3}
+                className={styles.modalTextarea}
+                value={addNotes}
+                onChange={e => setAddNotes(e.target.value)}
+                placeholder="Internal notes about this dealer (optional)"
+              />
+            </div>
+
+            {addError && <div className={styles.modalError}>{addError}</div>}
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.modalCancelBtn} onClick={() => setShowAddDealer(false)} disabled={addSaving}>
+                Cancel
+              </button>
+              <button type="button" className={styles.modalSaveBtn} onClick={saveAddDealer} disabled={addSaving}>
+                {addSaving ? 'Creating…' : 'Create dealer'}
               </button>
             </div>
           </div>
