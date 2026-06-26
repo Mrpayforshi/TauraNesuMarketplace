@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase'
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,15 @@ function sanitiseFilename(name: string): string {
 }
 
 // ─── POST /api/submissions/[id]/images ────────────────────────────────────
+//
+// This route is reached by anonymous sellers (no Supabase auth session),
+// using the unguessable submission UUID from the previous step as their
+// capability token. The `submissions` table is intentionally SELECT-locked
+// to admin/dealer roles only (to protect seller PII), so an anon-scoped
+// client can never read back the row it just created — the existence
+// check below, the storage upload, and the submission_images insert all
+// have to run on the admin client, which bypasses RLS entirely. The UUID
+// itself is the access control here, not RLS.
 
 export async function POST(
   request: NextRequest,
@@ -33,7 +42,7 @@ export async function POST(
     return err('Invalid submission ID')
   }
 
-  const supabase = createServerClient()
+  const supabase = createAdminClient()
 
   const { data: submission, error: fetchError } = await supabase
     .from('submissions')
