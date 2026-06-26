@@ -120,7 +120,7 @@ export default function NewListingPage() {
         if (res.status === 401) { clearAccessToken(); router.push('/login'); return; }
         throw new Error(data.error || 'Failed to create listing');
       }
-      setListingId(data.id);
+      setListingId(data.listing.id);
       setStep('images');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e: unknown) {
