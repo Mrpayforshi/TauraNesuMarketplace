@@ -116,7 +116,7 @@ let body: Record<string, any>; // request body shape is validated manually below
       }
 
       // Construct WhatsApp link
-      const message = `Hi ${submission.seller_name}, I saw your ${submission.year} ${submission.make} ${submission.model} submission on Car Platform ZW and I am interested. Can we arrange an inspection?`;
+      const message = `Hi ${submission.seller_name}, I saw your ${submission.year} ${submission.make} ${submission.model} submission on TauraNesu and I am interested. Can we arrange an inspection?`;
       const encodedMessage = encodeURIComponent(message);
       const whatsappLink = `https://wa.me/${submission.seller_whatsapp}?text=${encodedMessage}`;
 
