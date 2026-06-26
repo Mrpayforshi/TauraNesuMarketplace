@@ -68,11 +68,16 @@ export async function GET(request: NextRequest) {
 
     // Step 3: Query logic based on view
     if (view === 'new') {
-      // First get all submission IDs this dealer has already acted on
+      // First get all submission IDs this dealer has already acted on.
+      // A `leads` row with action = null means the lead was assigned to
+      // this dealer but no decision has been made yet — it still belongs
+      // in the "new" tab. Only rows with a non-null action (accepted /
+      // passed) count as "already acted on" and should be excluded here.
       const { data: actedLeads } = await supabase
         .from('leads')
         .select('submission_id')
-        .eq('dealer_id', dealer.id);
+        .eq('dealer_id', dealer.id)
+        .not('action', 'is', null);
 
       const actedIds = (actedLeads || []).map((l: any) => l.submission_id);
 
