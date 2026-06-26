@@ -116,12 +116,27 @@ export async function POST(request: NextRequest) {
         : null
 
     // ── Insert into Supabase ─────────────────────────────────────────────────
+    //
+    // This table has no SELECT policy for the anon/public role (only admins
+    // and dealers can read submissions back — see RLS policies on
+    // `submissions`). Postgres enforces RLS on RETURNING as an implicit
+    // SELECT against the just-inserted row, so `.select('id').single()`
+    // (or any `RETURNING`) here would fail with "new row violates row-level
+    // security policy" even though the INSERT itself is fully permitted —
+    // the insert succeeds, then the read-back of that row is what's
+    // rejected, aborting the whole statement.
+    //
+    // Fix: generate the id ourselves and insert it explicitly, so we never
+    // need Postgres to hand the row back to us.
+
+    const id = crypto.randomUUID()
 
     const supabase = createServerClient()
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('submissions')
       .insert({
+        id,
         make,
         model,
         year,
@@ -139,8 +154,6 @@ export async function POST(request: NextRequest) {
         additional_notes,
         status: 'pending',
       })
-      .select('id')
-      .single()
 
     if (error) {
       console.error('[POST /api/submissions] Supabase error:', {
@@ -152,7 +165,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save submission' }, { status: 500 })
     }
 
-    return NextResponse.json({ id: data.id }, { status: 201 })
+    return NextResponse.json({ id }, { status: 201 })
   } catch (e) {
     // Catches anything that THROWS rather than returning a Supabase
     // { error } — e.g. a client construction failure, a network error
