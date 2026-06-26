@@ -83,7 +83,12 @@ export async function GET(request: NextRequest) {
         .in('status', ['valued', 'in_pipeline']);
 
       if (actedIds.length > 0) {
-        submissionsQuery = submissionsQuery.not('id', 'in', `(${actedIds.map((id: string) => `'${id}'`).join(',')})`);
+        // NOTE: PostgREST's in.() list takes raw, unquoted values for
+        // plain identifiers like UUIDs — wrapping each id in '...' here
+        // previously made Postgres try to cast the literal string
+        // "'<uuid>'" (quotes included) to type uuid, which always failed
+        // with "invalid input syntax for type uuid". No quoting needed.
+        submissionsQuery = submissionsQuery.not('id', 'in', `(${actedIds.join(',')})`);
       }
 
       const { data: submissions, error: submissionError } = await submissionsQuery;
@@ -204,24 +209,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-/**
- * Helper function to build a subquery for leads.
- * Returns submission IDs that have a leads row for the given dealer with optional action filter.
- */
-async function getLeadsSubquery(
-  supabase: any,
-  dealerId: string,
-  action: string | null
-): Promise<string> {
-  let query = supabase.from('leads').select('submission_id').eq('dealer_id', dealerId);
-
-  if (action) {
-    query = query.eq('action', action);
-  }
-
-  const { data } = await query;
-  const ids = (data || []).map((l: any) => l.submission_id);
-  return ids.length > 0 ? ids.join("','") : "''";
 }
