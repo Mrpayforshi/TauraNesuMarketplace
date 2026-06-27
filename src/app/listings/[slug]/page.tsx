@@ -4,15 +4,23 @@ import { createServerClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import styles from './listing.module.css';
 
+export const dynamic = 'force-dynamic';
+
+interface ListingImage {
+  image_url: string;
+  display_order: number;
+}
+
 async function getListing(slug: string) {
   const supabase = createServerClient();
   const { data } = await supabase
     .from('listings')
     .select(`
-      id, title, make, model, year, price, body_type, slug,
-      images, mileage, transmission, fuel_type, color, description,
-      condition, features, status, created_at,
-      dealers(id, name, phone, email, location, logo_url)
+      id, make, model, year, price_usd, mileage_km, body_type, slug,
+      transmission, fuel_type, colour, description, condition, drive,
+      status, created_at,
+      listing_images ( image_url, display_order ),
+      dealers ( id, name, phone, city )
     `)
     .eq('slug', slug)
     .eq('status', 'active')
@@ -24,7 +32,7 @@ async function getRelated(make: string, excludeSlug: string) {
   const supabase = createServerClient();
   const { data } = await supabase
     .from('listings')
-    .select('id, title, make, model, year, price, slug, images, body_type')
+    .select('id, make, model, year, price_usd, slug, body_type, primary_image_url')
     .eq('make', make)
     .eq('status', 'active')
     .neq('slug', excludeSlug)
@@ -38,20 +46,27 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
 
   const related = await getRelated(listing.make, listing.slug);
   const dealer = Array.isArray(listing.dealers) ? listing.dealers[0] : listing.dealers;
-  const images: string[] = Array.isArray(listing.images) ? listing.images : [];
-  const features: string[] = Array.isArray(listing.features) ? listing.features : [];
+
+  const images: string[] = Array.isArray(listing.listing_images) && listing.listing_images.length > 0
+    ? [...(listing.listing_images as ListingImage[])]
+        .sort((a, b) => a.display_order - b.display_order)
+        .map(img => img.image_url)
+    : [];
+
   const phone = dealer?.phone?.replace(/\D/g, '') || '';
+  const listingLabel = `${listing.make} ${listing.model} ${listing.year}`;
 
   const specs = [
     { label: 'Year',         value: listing.year },
     { label: 'Make',         value: listing.make },
     { label: 'Model',        value: listing.model },
     { label: 'Body Type',    value: listing.body_type },
-    { label: 'Mileage',      value: listing.mileage ? `${listing.mileage.toLocaleString()} km` : null },
+    { label: 'Mileage',      value: listing.mileage_km ? `${listing.mileage_km.toLocaleString()} km` : null },
     { label: 'Transmission', value: listing.transmission },
     { label: 'Fuel Type',    value: listing.fuel_type },
-    { label: 'Color',        value: listing.color },
+    { label: 'Colour',       value: listing.colour },
     { label: 'Condition',    value: listing.condition },
+    { label: 'Drive',        value: listing.drive },
   ].filter(s => s.value);
 
   return (
@@ -66,7 +81,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             <span className={styles.breadSep}>›</span>
             <Link href="/listings" className={styles.breadLink}>Browse Cars</Link>
             <span className={styles.breadSep}>›</span>
-            <span className={styles.breadCurrent}>{listing.make} {listing.model} {listing.year}</span>
+            <span className={styles.breadCurrent}>{listingLabel}</span>
           </nav>
 
           <div className={styles.layout}>
@@ -79,14 +94,14 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 {images.length > 0 ? (
                   <>
                     <div className={styles.mainImgWrap}>
-                      <img src={images[0]} alt={listing.title} className={styles.mainImg} id="main-img" />
+                      <img src={images[0]} alt={listingLabel} className={styles.mainImg} id="main-img" />
                       {listing.body_type && <span className={styles.galleryBadge}>{listing.body_type}</span>}
                     </div>
                     {images.length > 1 && (
                       <div className={styles.thumbRow}>
                         {images.slice(1, 5).map((img, i) => (
                           <div key={i} className={styles.thumbWrap}>
-                            <img src={img} alt={`View ${i + 2}`} className={styles.thumb} />
+                            <img src={img} alt={`${listingLabel} - view ${i + 2}`} className={styles.thumb} />
                             {i === 3 && images.length > 5 && (
                               <div className={styles.thumbMore}>+{images.length - 5}</div>
                             )}
@@ -121,23 +136,6 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 </div>
               </div>
 
-              {/* Features */}
-              {features.length > 0 && (
-                <div className={styles.featuresCard}>
-                  <h2 className={styles.specsTitle}>Features & Extras</h2>
-                  <div className={styles.featuresGrid}>
-                    {features.map((f: string) => (
-                      <div key={f} className={styles.featureItem}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        {f}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Description */}
               {listing.description && (
                 <div className={styles.descCard}>
@@ -151,15 +149,15 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             <div className={styles.rightCol}>
               <div className={styles.priceCard}>
                 <p className={styles.listingTitle}>{listing.make} {listing.model}</p>
-                <p className={styles.listingYear}>{listing.year}{listing.mileage ? ` · ${listing.mileage.toLocaleString()} km` : ''}</p>
-                <p className={styles.price}>${listing.price?.toLocaleString()}</p>
+                <p className={styles.listingYear}>{listing.year}{listing.mileage_km ? ` · ${listing.mileage_km.toLocaleString()} km` : ''}</p>
+                <p className={styles.price}>${listing.price_usd?.toLocaleString()}</p>
                 <p className={styles.priceNote}>USD · Price as listed</p>
 
                 {/* CTA buttons */}
                 <div className={styles.ctaStack}>
                   {phone ? (
                     <a
-                      href={`https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I'm interested in the ${listing.year} ${listing.make} ${listing.model} listed on TauraNesu. Is it still available?`)}`}
+                      href={`https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I'm interested in the ${listingLabel} listed on TauraNesu. Is it still available?`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.waBtnPrimary}
@@ -185,16 +183,12 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 {dealer && (
                   <div className={styles.dealerCard}>
                     <div className={styles.dealerHeader}>
-                      {dealer.logo_url ? (
-                        <img src={dealer.logo_url} alt={dealer.name} className={styles.dealerLogo} />
-                      ) : (
-                        <div className={styles.dealerLogoPlaceholder}>
-                          {dealer.name?.charAt(0) || 'D'}
-                        </div>
-                      )}
+                      <div className={styles.dealerLogoPlaceholder}>
+                        {dealer.name?.charAt(0) || 'D'}
+                      </div>
                       <div>
                         <p className={styles.dealerName}>{dealer.name}</p>
-                        {dealer.location && <p className={styles.dealerLocation}>{dealer.location}</p>}
+                        {dealer.city && <p className={styles.dealerLocation}>{dealer.city}</p>}
                       </div>
                     </div>
                   </div>
@@ -222,19 +216,19 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
               <h2 className={styles.relatedTitle}>More {listing.make} listings</h2>
               <div className={styles.relatedGrid}>
                 {related.map((r: any) => {
-                  const img = Array.isArray(r.images) ? r.images[0] : null;
+                  const img = r.primary_image_url || null;
                   return (
                     <Link key={r.id} href={`/listings/${r.slug}`} className={styles.relatedCard}>
                       <div className={styles.relatedImgWrap}>
                         {img ? (
-                          <img src={img} alt={r.title} className={styles.relatedImg} />
+                          <img src={img} alt={`${r.make} ${r.model}`} className={styles.relatedImg} />
                         ) : (
                           <div className={styles.relatedImgPlaceholder} />
                         )}
                       </div>
                       <div className={styles.relatedBody}>
                         <p className={styles.relatedName}>{r.make} {r.model} {r.year}</p>
-                        <p className={styles.relatedPrice}>${r.price?.toLocaleString()}</p>
+                        <p className={styles.relatedPrice}>${r.price_usd?.toLocaleString()}</p>
                       </div>
                     </Link>
                   );
