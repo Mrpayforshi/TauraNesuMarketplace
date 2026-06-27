@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     let query = supabase
       .from('dealers')
-      .select('id, name, contact_name, phone, city, status, subscription_tier, listing_limit, notes, created_at')
+      .select('id, name, contact_name, phone, city, status, subscription_tier, listing_limit, notes, created_at, auth_user_id, login_phone')
       .order('created_at', { ascending: false });
 
     if (status) {
