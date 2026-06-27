@@ -33,10 +33,17 @@ export async function POST(
       );
     }
 
+    // Extract the Bearer token directly from the request so it can be
+    // threaded into createServerSupabaseClient(). Relying on the
+    // next/headers fallback inside that helper is not guaranteed to see
+    // the same header data in every execution context.
+    const authHeader = request.headers.get('authorization') ?? request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+
     const listingId = params.id;
 
     // Step 2: Verify listing exists and belongs to this dealer
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClient(token);
     const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('id, primary_image_url')
