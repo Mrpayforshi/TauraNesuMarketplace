@@ -16,6 +16,8 @@ interface Dealer {
   listing_limit: number;
   notes: string | null;
   created_at: string;
+  auth_user_id: string | null;
+  login_phone: string | null;
 }
 
 type FilterTab = 'all' | 'pending' | 'active' | 'suspended';
@@ -56,6 +58,19 @@ export default function AdminDealersPage() {
   const [addNotes, setAddNotes] = useState('');
   const [addError, setAddError] = useState('');
   const [addSaving, setAddSaving] = useState(false);
+  const [addWantsLogin, setAddWantsLogin] = useState(false);
+  const [addIdentifierType, setAddIdentifierType] = useState<'email' | 'phone'>('email');
+  const [addIdentifier, setAddIdentifier] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addPasswordVisible, setAddPasswordVisible] = useState(false);
+
+  const [credentialsTarget, setCredentialsTarget] = useState<Dealer | null>(null);
+  const [credIdentifierType, setCredIdentifierType] = useState<'email' | 'phone'>('email');
+  const [credIdentifier, setCredIdentifier] = useState('');
+  const [credPassword, setCredPassword] = useState('');
+  const [credPasswordVisible, setCredPasswordVisible] = useState(false);
+  const [credError, setCredError] = useState('');
+  const [credSaving, setCredSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -176,6 +191,11 @@ export default function AdminDealersPage() {
     setAddLimit('20');
     setAddNotes('');
     setAddError('');
+    setAddWantsLogin(false);
+    setAddIdentifierType('email');
+    setAddIdentifier('');
+    setAddPassword('');
+    setAddPasswordVisible(false);
     setShowAddDealer(true);
   }
 
@@ -188,6 +208,16 @@ export default function AdminDealersPage() {
     if (!Number.isInteger(limitNum) || limitNum < 0) {
       setAddError('Listing limit must be a non-negative whole number.');
       return;
+    }
+    if (addWantsLogin) {
+      if (!addIdentifier.trim()) {
+        setAddError(addIdentifierType === 'email' ? 'Email is required.' : 'Phone number is required.');
+        return;
+      }
+      if (addPassword.length < 8) {
+        setAddError('Password must be at least 8 characters.');
+        return;
+      }
     }
     setAddSaving(true);
     setAddError('');
@@ -203,6 +233,11 @@ export default function AdminDealersPage() {
           subscription_tier: addTier,
           listing_limit: limitNum,
           notes: addNotes.trim() || undefined,
+          ...(addWantsLogin && {
+            identifierType: addIdentifierType,
+            identifier: addIdentifier.trim(),
+            password: addPassword,
+          }),
         }),
       });
       const data = await res.json();
@@ -213,6 +248,53 @@ export default function AdminDealersPage() {
       setAddError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setAddSaving(false);
+    }
+  }
+
+  function openCredentials(dealer: Dealer) {
+    setCredentialsTarget(dealer);
+    setCredIdentifierType('email');
+    setCredIdentifier('');
+    setCredPassword('');
+    setCredPasswordVisible(false);
+    setCredError('');
+  }
+
+  async function saveCredentials() {
+    if (!credentialsTarget) return;
+    if (!credIdentifier.trim()) {
+      setCredError(credIdentifierType === 'email' ? 'Email is required.' : 'Phone number is required.');
+      return;
+    }
+    if (credPassword.length < 8) {
+      setCredError('Password must be at least 8 characters.');
+      return;
+    }
+    setCredSaving(true);
+    setCredError('');
+    try {
+      const res = await authFetch(`/api/admin/dealers/${credentialsTarget.id}/credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifierType: credIdentifierType,
+          identifier: credIdentifier.trim(),
+          password: credPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to set login');
+      // The credentials route only returns a status message, not the
+      // updated dealer row — refetch the list so auth_user_id/login_phone
+      // reflect the real database state rather than an optimistic guess.
+      const refreshed = await authFetch('/api/admin/dealers');
+      const refreshedData = await refreshed.json();
+      if (refreshed.ok) setDealers(refreshedData.dealers || []);
+      setCredentialsTarget(null);
+    } catch (e) {
+      setCredError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setCredSaving(false);
     }
   }
 
@@ -325,6 +407,9 @@ export default function AdminDealersPage() {
                       )}
                       <button type="button" className={styles.editBtn} onClick={() => openEdit(dealer)}>
                         Edit
+                      </button>
+                      <button type="button" className={styles.editBtn} onClick={() => openCredentials(dealer)}>
+                        {dealer.auth_user_id ? 'Reset Login' : 'Set Login'}
                       </button>
                     </td>
                   </tr>
@@ -521,6 +606,81 @@ export default function AdminDealersPage() {
               />
             </div>
 
+            <div className={styles.modalField}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={addWantsLogin}
+                  onChange={e => setAddWantsLogin(e.target.checked)}
+                />
+                Set up login credentials now
+              </label>
+            </div>
+
+            {addWantsLogin && (
+              <>
+                <div className={styles.modalField}>
+                  <label className={styles.modalLabel}>Login by</label>
+                  <div className={styles.chipGroup}>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${addIdentifierType === 'email' ? styles.chipActive : ''}`}
+                      onClick={() => { setAddIdentifierType('email'); setAddIdentifier(''); }}
+                    >
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${addIdentifierType === 'phone' ? styles.chipActive : ''}`}
+                      onClick={() => { setAddIdentifierType('phone'); setAddIdentifier(''); }}
+                    >
+                      Phone
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.modalField}>
+                  <label className={styles.modalLabel} htmlFor="addIdentifier">
+                    {addIdentifierType === 'email' ? 'Login email' : 'Login phone'}
+                  </label>
+                  <input
+                    id="addIdentifier"
+                    type={addIdentifierType === 'email' ? 'email' : 'text'}
+                    className={styles.modalInput}
+                    value={addIdentifier}
+                    onChange={e => setAddIdentifier(e.target.value)}
+                    placeholder={addIdentifierType === 'email' ? 'dealer@example.com' : 'e.g. 0771234567'}
+                  />
+                  {addIdentifierType === 'phone' && (
+                    <p className={styles.modalSub} style={{ marginTop: '0.4rem' }}>
+                      Password-based login for now — phone is just used as the sign-in ID, no SMS code is sent.
+                    </p>
+                  )}
+                </div>
+
+                <div className={styles.modalField}>
+                  <label className={styles.modalLabel} htmlFor="addPassword">Password</label>
+                  <div className={styles.passwordRow}>
+                    <input
+                      id="addPassword"
+                      type={addPasswordVisible ? 'text' : 'password'}
+                      className={styles.modalInput}
+                      value={addPassword}
+                      onChange={e => setAddPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                    />
+                    <button
+                      type="button"
+                      className={styles.showHideBtn}
+                      onClick={() => setAddPasswordVisible(v => !v)}
+                    >
+                      {addPasswordVisible ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
             {addError && <div className={styles.modalError}>{addError}</div>}
 
             <div className={styles.modalActions}>
@@ -529,6 +689,92 @@ export default function AdminDealersPage() {
               </button>
               <button type="button" className={styles.modalSaveBtn} onClick={saveAddDealer} disabled={addSaving}>
                 {addSaving ? 'Creating…' : 'Create dealer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {credentialsTarget && (
+        <div className={styles.modalOverlay} onClick={() => !credSaving && setCredentialsTarget(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>
+              {credentialsTarget.auth_user_id ? 'Reset login for' : 'Set login for'} {credentialsTarget.name}
+            </h2>
+            <p className={styles.modalSub}>
+              {credentialsTarget.auth_user_id
+                ? "This replaces their current sign-in email/phone and password. They'll need to use the new ones from now on."
+                : 'They\u2019ll use this to sign in to the dealer portal.'}
+            </p>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>Login by</label>
+              <div className={styles.chipGroup}>
+                <button
+                  type="button"
+                  className={`${styles.chip} ${credIdentifierType === 'email' ? styles.chipActive : ''}`}
+                  onClick={() => { setCredIdentifierType('email'); setCredIdentifier(''); }}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.chip} ${credIdentifierType === 'phone' ? styles.chipActive : ''}`}
+                  onClick={() => { setCredIdentifierType('phone'); setCredIdentifier(''); }}
+                >
+                  Phone
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="credIdentifier">
+                {credIdentifierType === 'email' ? 'Login email' : 'Login phone'}
+              </label>
+              <input
+                id="credIdentifier"
+                type={credIdentifierType === 'email' ? 'email' : 'text'}
+                className={styles.modalInput}
+                value={credIdentifier}
+                onChange={e => setCredIdentifier(e.target.value)}
+                placeholder={credIdentifierType === 'email' ? 'dealer@example.com' : 'e.g. 0771234567'}
+              />
+              {credIdentifierType === 'phone' && (
+                <p className={styles.modalSub} style={{ marginTop: '0.4rem' }}>
+                  Password-based login for now — phone is just used as the sign-in ID, no SMS code is sent.
+                </p>
+              )}
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel} htmlFor="credPassword">Password</label>
+              <div className={styles.passwordRow}>
+                <input
+                  id="credPassword"
+                  type={credPasswordVisible ? 'text' : 'password'}
+                  className={styles.modalInput}
+                  value={credPassword}
+                  onChange={e => setCredPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  className={styles.showHideBtn}
+                  onClick={() => setCredPasswordVisible(v => !v)}
+                >
+                  {credPasswordVisible ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+
+            {credError && <div className={styles.modalError}>{credError}</div>}
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.modalCancelBtn} onClick={() => setCredentialsTarget(null)} disabled={credSaving}>
+                Cancel
+              </button>
+              <button type="button" className={styles.modalSaveBtn} onClick={saveCredentials} disabled={credSaving}>
+                {credSaving ? 'Saving…' : credentialsTarget.auth_user_id ? 'Reset login' : 'Create login'}
               </button>
             </div>
           </div>
