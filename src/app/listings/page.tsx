@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import styles from './listings.module.css';
 
+export const dynamic = 'force-dynamic';
+
 const MAKES = ['Toyota','Honda','BMW','Mercedes-Benz','Audi','Volkswagen','Mazda','Nissan','Hyundai','Ford','Isuzu','Mitsubishi','Subaru','Land Rover','Jeep'];
 const BODY_TYPES = ['SUV','Sedan','Hatchback','Pickup','Minivan','Coupe','Convertible','Wagon'];
 const YEARS = Array.from({ length: 26 }, (_, i) => 2025 - i);
@@ -27,16 +29,16 @@ async function getListings(params: SearchParams) {
 
   let query = supabase
     .from('listings')
-    .select('id,title,make,model,year,price,body_type,slug,images,mileage,transmission,fuel_type,dealers(name)', { count: 'exact' })
+    .select('id,make,model,year,price_usd,body_type,slug,primary_image_url,mileage_km,transmission,fuel_type,dealers(name)', { count: 'exact' })
     .eq('status', 'active');
 
   if (params.q) {
-    query = query.or(`title.ilike.%${params.q}%,make.ilike.%${params.q}%,model.ilike.%${params.q}%`);
+    query = query.or(`make.ilike.%${params.q}%,model.ilike.%${params.q}%,description.ilike.%${params.q}%`);
   }
   if (params.make) query = query.ilike('make', params.make);
   if (params.body_type) query = query.ilike('body_type', params.body_type);
-  if (params.min_price) query = query.gte('price', parseInt(params.min_price));
-  if (params.max_price) query = query.lte('price', parseInt(params.max_price));
+  if (params.min_price) query = query.gte('price_usd', parseInt(params.min_price));
+  if (params.max_price) query = query.lte('price_usd', parseInt(params.max_price));
   if (params.min_year) query = query.gte('year', parseInt(params.min_year));
   if (params.max_year) query = query.lte('year', parseInt(params.max_year));
 
@@ -212,13 +214,13 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                 <div className={styles.grid}>
                   {listings.map((listing: any) => {
                     const dealer = Array.isArray(listing.dealers) ? listing.dealers[0] : listing.dealers;
-                    const firstImg = Array.isArray(listing.images) ? listing.images[0] : null;
+                    const firstImg = listing.primary_image_url || null;
                     return (
                       <Link key={listing.id} href={`/listings/${listing.slug}`} className={styles.card}>
                         <div className={styles.cardImgWrap}>
                           {listing.body_type && <span className={styles.cardBadge}>{listing.body_type}</span>}
                           {firstImg ? (
-                            <img src={firstImg} alt={listing.title} className={styles.cardImg} />
+                            <img src={firstImg} alt={`${listing.make} ${listing.model}`} className={styles.cardImg} />
                           ) : (
                             <div className={styles.cardImgPlaceholder}>
                               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">
@@ -232,8 +234,8 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                         </div>
                         <div className={styles.cardBody}>
                           <p className={styles.cardTitle}>{listing.make} {listing.model}</p>
-                          <p className={styles.cardSub}>{listing.year}{listing.mileage ? ` · ${listing.mileage.toLocaleString()} km` : ''}{listing.transmission ? ` · ${listing.transmission}` : ''}</p>
-                          <p className={styles.cardPrice}>${listing.price?.toLocaleString()}</p>
+                          <p className={styles.cardSub}>{listing.year}{listing.mileage_km ? ` · ${listing.mileage_km.toLocaleString()} km` : ''}{listing.transmission ? ` · ${listing.transmission}` : ''}</p>
+                          <p className={styles.cardPrice}>${listing.price_usd?.toLocaleString()}</p>
                           <p className={styles.cardDealer}>{dealer?.name || 'TauraNesu Dealer'}</p>
                         </div>
                       </Link>
