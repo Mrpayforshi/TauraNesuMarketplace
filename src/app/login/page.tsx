@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { setAccessToken } from '@/lib/client-auth';
+import { normalizeZimPhone } from '@/lib/phone-auth';
 import styles from './login.module.css';
 
 function LoginForm() {
@@ -30,7 +31,17 @@ function LoginForm() {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !email.includes('@')) {
+    if (isDealerPortal) {
+      const looksLikeEmail = email.includes('@');
+      if (!email.trim()) {
+        setError('Please enter your email or phone number.');
+        return;
+      }
+      if (!looksLikeEmail && !normalizeZimPhone(email)) {
+        setError('Enter a valid email address or Zimbabwean phone number (e.g. 0771234567).');
+        return;
+      }
+    } else if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -140,15 +151,17 @@ function LoginForm() {
               <form onSubmit={handleSubmit} noValidate className={styles.form}>
 
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="email">Email address</label>
+                  <label className={styles.label} htmlFor="email">
+                    {isDealerPortal ? 'Email or phone number' : 'Email address'}
+                  </label>
                   <input
                     id="email"
-                    type="email"
+                    type={isDealerPortal ? 'text' : 'email'}
                     value={email}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => { setEmail(e.target.value); setError(''); }}
                     className={styles.input}
-                    placeholder="you@example.com"
-                    autoComplete="email"
+                    placeholder={isDealerPortal ? 'you@example.com or 0771234567' : 'you@example.com'}
+                    autoComplete={isDealerPortal ? 'username' : 'email'}
                     autoFocus
                   />
                 </div>
