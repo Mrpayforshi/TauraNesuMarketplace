@@ -112,13 +112,13 @@ export async function POST(
       }
     }
 
-    function authErrorMessage(message: string, fallbackEntity: string): string {
+    const authErrorMessage = (message: string, fallbackEntity: string): string => {
       const lower = message.toLowerCase();
       if (lower.includes('already registered') || lower.includes('already exists')) {
         return `That ${fallbackEntity} is already in use`;
       }
       return message;
-    }
+    };
 
     if (dealer.auth_user_id) {
       // Reset path: update the existing auth user in place.
