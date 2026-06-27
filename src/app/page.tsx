@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import styles from './home.module.css';
 
+export const dynamic = 'force-dynamic';
+
 async function getLatestListings() {
   const supabase = createServerClient();
   const { data, error } = await supabase
