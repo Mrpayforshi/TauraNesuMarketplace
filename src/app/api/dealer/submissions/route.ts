@@ -34,6 +34,13 @@ interface SubmissionResponse {
   seller_name?: string;
   seller_phone?: string;
   seller_whatsapp?: string;
+  // Only present for the 'accepted' view — this dealer's self-reported
+  // transaction on this submission, if one exists.
+  transaction?: {
+    id: string;
+    status: string;
+    deal_value_usd: number;
+  } | null;
 }
 
 /**
@@ -166,6 +173,31 @@ export async function GET(request: NextRequest) {
 
       if (fetchError) throw fetchError;
 
+      // For the accepted view, pull this dealer's own transactions for
+      // these submissions so the UI can show "Reported" / "Closed" instead
+      // of always offering the Mark as Sold button.
+      let transactionsBySubmission: Record<
+        string,
+        { id: string; status: string; deal_value_usd: number }
+      > = {};
+
+      if (view === 'accepted') {
+        const { data: txData, error: txError } = await supabase
+          .from('transactions')
+          .select('id, submission_id, status, deal_value_usd')
+          .eq('dealer_id', dealer.id)
+          .in('submission_id', submissionIds);
+
+        if (txError) throw txError;
+
+        transactionsBySubmission = Object.fromEntries(
+          (txData || []).map((t) => [
+            t.submission_id,
+            { id: t.id, status: t.status, deal_value_usd: t.deal_value_usd },
+          ])
+        );
+      }
+
       submissions = (submissionData || []).map((submission) => {
         const response: SubmissionResponse = {
           id: submission.id,
@@ -193,6 +225,7 @@ export async function GET(request: NextRequest) {
           response.seller_name = submission.seller_name;
           response.seller_phone = submission.seller_phone;
           response.seller_whatsapp = submission.seller_whatsapp;
+          response.transaction = transactionsBySubmission[submission.id] ?? null;
         }
 
         return response;
