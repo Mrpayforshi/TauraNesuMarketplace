@@ -38,7 +38,7 @@ export async function POST(
     );
   }
 
-  const { dealer_id, deal_value_usd, commission_usd, lead_fee_usd } = body;
+  const { dealer_id, deal_value_usd } = body;
 
   if (!dealer_id) {
     return NextResponse.json(
@@ -47,19 +47,24 @@ export async function POST(
     );
   }
 
-  if (
-    typeof deal_value_usd !== 'number' ||
-    typeof commission_usd !== 'number' ||
-    typeof lead_fee_usd !== 'number'
-  ) {
+  if (typeof deal_value_usd !== 'number' || deal_value_usd < 0) {
     return NextResponse.json(
-      {
-        error:
-          'deal_value_usd, commission_usd, and lead_fee_usd are required and must be numbers',
-      },
+      { error: 'deal_value_usd is required and must be a number' },
       { status: 400 }
     );
   }
+
+  // commission_usd and lead_fee_usd are optional. The admin UI's form
+  // fields for these are optional, but this route used to require both as
+  // numbers — sending an empty field serialized to `undefined`, which
+  // dropped the key from the JSON body entirely and always 400'd. Default
+  // commission to the standard flat 3% of deal value when not supplied.
+  const COMMISSION_RATE = 0.03;
+  const commission_usd =
+    typeof body.commission_usd === 'number'
+      ? body.commission_usd
+      : Math.round(deal_value_usd * COMMISSION_RATE * 100) / 100;
+  const lead_fee_usd = typeof body.lead_fee_usd === 'number' ? body.lead_fee_usd : 0;
 
   // Confirm submission exists and is in the correct state.
   const { data: submission, error: fetchError } = await supabase
