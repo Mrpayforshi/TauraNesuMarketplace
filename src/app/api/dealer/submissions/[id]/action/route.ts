@@ -126,18 +126,15 @@ let body: Record<string, any>; // request body shape is validated manually below
 
     // Step 6 & 7: Handle action-specific logic
     if (action === 'accepted') {
-      // Update submission status to in_pipeline
-      const { error: updateError } = await supabase
-        .from('submissions')
-        .update({ status: 'in_pipeline' })
-        .eq('id', submissionId);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: 'Failed to update submission' },
-          { status: 500 }
-        );
-      }
+      // NOTE: submissions.status is intentionally NOT written here.
+      // A database trigger (trg_lead_accept) fires on this leads write and
+      // moves submissions.status from 'in_pipeline' to 'accepted' itself,
+      // and expires any other dealers still pending on this submission.
+      // This route used to also run `.update({ status: 'in_pipeline' })`
+      // here, which executed *after* the trigger and silently reset status
+      // back to 'in_pipeline' on every accept — that's why the admin
+      // dashboard never showed movement. Do not reintroduce a status write
+      // here; let the trigger own that transition.
 
       // Construct WhatsApp link
       const message = `Hi ${submission.seller_name}, I saw your ${submission.year} ${submission.make} ${submission.model} submission on TauraNesu and I am interested. Can we arrange an inspection?`;
