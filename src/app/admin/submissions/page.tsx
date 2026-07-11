@@ -941,7 +941,7 @@ function TransactionModal({
     }
   };
 
-  const closeTransaction = async () => {
+  const closeTransaction = async (status: 'completed' | 'disputed') => {
     if (!createdTransactionId) return;
     setError(null);
     setSaving(true);
@@ -949,7 +949,11 @@ function TransactionModal({
       const res = await authFetch(`/api/admin/submissions/${submission.id}/transaction`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction_id: createdTransactionId }),
+        // NOTE: this call used to omit `status` entirely — the backend
+        // requires status to be 'completed' or 'disputed' and always
+        // rejected the request with 400, so "Mark Closed" silently failed
+        // every time. status is now required from the caller.
+        body: JSON.stringify({ transaction_id: createdTransactionId, status }),
       });
       if (res.status === 401) {
         onUnauthorized();
@@ -1032,7 +1036,18 @@ function TransactionModal({
               <button className={styles.modalCancelBtn} onClick={onClose} disabled={saving}>
                 Close Later
               </button>
-              <button className={styles.modalPrimaryBtn} onClick={closeTransaction} disabled={saving}>
+              <button
+                className={styles.modalCancelBtn}
+                onClick={() => closeTransaction('disputed')}
+                disabled={saving}
+              >
+                Dispute
+              </button>
+              <button
+                className={styles.modalPrimaryBtn}
+                onClick={() => closeTransaction('completed')}
+                disabled={saving}
+              >
                 {saving ? 'Closing…' : 'Mark Closed'}
               </button>
             </div>
