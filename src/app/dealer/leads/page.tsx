@@ -40,6 +40,7 @@ interface LeadSubmission {
   seller_name?: string;
   seller_phone?: string;
   seller_whatsapp?: string;
+  transaction?: { id: string; status: string; deal_value_usd: number } | null;
 }
 
 const TABS: { key: ViewType; label: string }[] = [
@@ -97,6 +98,7 @@ export default function DealerLeadsPage() {
   const [actionError, setActionError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [soldTarget, setSoldTarget] = useState<LeadSubmission | null>(null);
 
   const handleUnauthorized = useCallback(() => {
     clearAccessToken();
@@ -162,6 +164,13 @@ export default function DealerLeadsPage() {
     } finally {
       setActingId(null);
     }
+  }
+
+  function handleSoldSuccess(submissionId: string, transaction: { id: string; status: string; deal_value_usd: number }) {
+    setLeads((prev) =>
+      prev.map((l) => (l.id === submissionId ? { ...l, transaction } : l))
+    );
+    setSoldTarget(null);
   }
 
   return (
@@ -241,6 +250,7 @@ export default function DealerLeadsPage() {
                       onToggleExpand={() => setExpandedId(expandedId === s.id ? null : s.id)}
                       onAccept={() => act(s.id, 'accepted')}
                       onPass={() => act(s.id, 'passed')}
+                      onMarkSold={() => setSoldTarget(s)}
                       acting={actingId === s.id}
                     />
                   ))}
@@ -250,6 +260,15 @@ export default function DealerLeadsPage() {
           )}
         </div>
       </main>
+
+      {soldTarget && (
+        <MarkSoldModal
+          submission={soldTarget}
+          onClose={() => setSoldTarget(null)}
+          onUnauthorized={handleUnauthorized}
+          onSuccess={(transaction) => handleSoldSuccess(soldTarget.id, transaction)}
+        />
+      )}
     </>
   );
 }
@@ -263,6 +282,7 @@ function LeadRow({
   onToggleExpand,
   onAccept,
   onPass,
+  onMarkSold,
   acting,
 }: {
   submission: LeadSubmission;
@@ -271,6 +291,7 @@ function LeadRow({
   onToggleExpand: () => void;
   onAccept: () => void;
   onPass: () => void;
+  onMarkSold: () => void;
   acting: boolean;
 }) {
   const whatsappLink = tab === 'accepted' ? buildWhatsappLink(s) : null;
@@ -323,6 +344,26 @@ function LeadRow({
               >
                 WhatsApp
               </a>
+            )}
+            {tab === 'accepted' && !s.transaction && (
+              <button
+                className={styles.approveBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkSold();
+                }}
+              >
+                Mark as Sold
+              </button>
+            )}
+            {tab === 'accepted' && s.transaction?.status === 'pending' && (
+              <span className={styles.passedBadge}>Reported — awaiting confirmation</span>
+            )}
+            {tab === 'accepted' && s.transaction?.status === 'completed' && (
+              <span className={styles.passedBadge}>Closed</span>
+            )}
+            {tab === 'accepted' && s.transaction?.status === 'disputed' && (
+              <span className={styles.passedBadge}>Disputed — contact admin</span>
             )}
             {tab === 'passed' && <span className={styles.passedBadge}>Passed</span>}
             <button className={styles.linkBtn} onClick={onToggleExpand}>
@@ -394,5 +435,108 @@ function LeadRow({
         </tr>
       )}
     </>
+  );
+}
+
+// ─── Mark as Sold modal ─────────────────────────────────────────────────────
+
+const COMMISSION_RATE = 0.03;
+
+function MarkSoldModal({
+  submission,
+  onClose,
+  onSuccess,
+  onUnauthorized,
+}: {
+  submission: LeadSubmission;
+  onClose: () => void;
+  onSuccess: (transaction: { id: string; status: string; deal_value_usd: number }) => void;
+  onUnauthorized: () => void;
+}) {
+  const [dealValue, setDealValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const dealNum = Number(dealValue);
+  const validDeal = dealValue !== '' && Number.isFinite(dealNum) && dealNum > 0;
+  const commissionPreview = validDeal ? Math.round(dealNum * COMMISSION_RATE * 100) / 100 : 0;
+
+  async function submit() {
+    if (!validDeal) {
+      setError('Enter a valid sale price');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await authFetch(`/api/dealer/submissions/${submission.id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal_value_usd: dealNum }),
+      });
+      if (res.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to report sale — please try again.');
+        return;
+      }
+      onSuccess({
+        id: data.transaction.id,
+        status: data.transaction.status,
+        deal_value_usd: data.transaction.deal_value_usd,
+      });
+    } catch {
+      setError('Network error — please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalTitle}>Mark as Sold</div>
+        <div className={styles.modalSub}>
+          {submission.year} {submission.make} {submission.model}
+        </div>
+
+        {error && <div className={styles.errorBox}>{error}</div>}
+
+        <div className={styles.modalField}>
+          <label className={styles.modalLabel}>Sale Price (USD)</label>
+          <input
+            className={styles.modalInput}
+            type="number"
+            min={0}
+            value={dealValue}
+            onChange={(e) => setDealValue(e.target.value)}
+            placeholder="e.g. 9000"
+            autoFocus
+          />
+        </div>
+
+        {validDeal && (
+          <p className={styles.modalSub}>
+            Commission at 3%: {formatUsd(commissionPreview)}
+          </p>
+        )}
+
+        <p className={styles.modalSub}>
+          This reports the sale for admin review — it isn&apos;t final until confirmed.
+        </p>
+
+        <div className={styles.modalActions}>
+          <button className={styles.modalCancelBtn} onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+          <button className={styles.modalPrimaryBtn} onClick={submit} disabled={saving || !validDeal}>
+            {saving ? 'Reporting…' : 'Report Sale'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
