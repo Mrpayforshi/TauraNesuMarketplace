@@ -83,7 +83,10 @@ export default function DealerListingViewPage() {
             backLabel="Back to your listings"
             note={
               listing.status === 'rejected' ? (
-                <>This listing was rejected. Edit it and resubmit, or contact support for details.</>
+                <>
+                  This listing was rejected{listing.rejection_reason ? `: ${listing.rejection_reason}` : '.'} Edit it
+                  and resubmit, or contact support if anything's unclear.
+                </>
               ) : undefined
             }
             actions={
