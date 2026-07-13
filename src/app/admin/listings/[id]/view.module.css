@@ -1,0 +1,116 @@
+.root {
+  min-height: 100%;
+}
+
+.stateWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.skeleton {
+  height: 400px;
+  border-radius: 12px;
+  background: #1e293b;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.errorBox {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.reviewActions {
+  width: 100%;
+}
+
+.approveBtn {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  background: #059669;
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.approveBtn:hover:not(:disabled) {
+  background: #047857;
+}
+
+.rejectBtn {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  color: #f87171;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.rejectBtn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.approveBtn:disabled,
+.rejectBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rejectBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.rejectInput {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.rejectError {
+  color: #f87171;
+  font-size: 0.8rem;
+}
+
+.rejectBoxActions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.cancelBtn {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.1);
+}
