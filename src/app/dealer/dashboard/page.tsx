@@ -16,6 +16,7 @@ interface Listing {
   status: string;
   view_count: number;
   created_at: string;
+  primary_image_url: string | null;
 }
 
 interface Analytics {
@@ -230,6 +231,7 @@ export default function DealerDashboard() {
                     <table className={styles.table}>
                       <thead>
                         <tr>
+                          <th aria-label="Photo" />
                           <th>Vehicle</th>
                           <th>Price</th>
                           <th>Status</th>
@@ -241,6 +243,25 @@ export default function DealerDashboard() {
                       <tbody>
                         {analytics.listings.map(listing => (
                           <tr key={listing.id}>
+                            <td style={{ width: 56 }}>
+                              {listing.primary_image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={listing.primary_image_url}
+                                  alt=""
+                                  style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: 48,
+                                    height: 36,
+                                    borderRadius: 6,
+                                    background: '#1e293b',
+                                  }}
+                                />
+                              )}
+                            </td>
                             <td className={styles.vehicleCell}>
                               <span className={styles.vehicleName}>
                                 {listing.year} {listing.make} {listing.model}
@@ -255,6 +276,16 @@ export default function DealerDashboard() {
                             <td className={styles.dateCell}>{timeAgo(listing.created_at)}</td>
                             <td className={styles.viewsCell}>{listing.view_count}</td>
                             <td className={styles.actionsCell}>
+                              <Link
+                                href={`/dealer/listings/${listing.id}`}
+                                className={styles.actionBtn}
+                                title="View"
+                              >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
+                              </Link>
                               <Link
                                 href={`/dealer/listings/${listing.id}/edit`}
                                 className={styles.actionBtn}
