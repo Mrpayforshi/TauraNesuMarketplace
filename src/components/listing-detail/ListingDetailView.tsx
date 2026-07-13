@@ -31,6 +31,7 @@ export interface ListingDetailData {
   dealers?: { id: string; name: string } | null;
   listing_images: ListingImage[];
   primary_image_url?: string | null;
+  rejection_reason?: string | null;
 }
 
 interface Props {
