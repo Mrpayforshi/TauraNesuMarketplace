@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { authFetch, clearAccessToken } from '@/lib/client-auth';
 import styles from './admin-listings.module.css';
 
@@ -13,6 +14,7 @@ interface Listing {
   price_usd: number;
   status: 'draft' | 'pending_review' | 'active' | 'rejected' | 'sold' | 'archived' | 'deleted';
   created_at: string;
+  primary_image_url: string | null;
   dealers: { id: string; name: string } | null;
 }
 
@@ -311,6 +313,7 @@ export default function AdminListingsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th aria-label="Photo" />
                   <th>Dealer</th>
                   <th>Vehicle</th>
                   <th>Price</th>
@@ -322,12 +325,40 @@ export default function AdminListingsPage() {
               <tbody>
                 {filtered.map(listing => (
                   <tr key={listing.id}>
+                    <td style={{ width: 56 }}>
+                      {listing.primary_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={listing.primary_image_url}
+                          alt=""
+                          style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+                        />
+                      ) : (
+                        <div style={{ width: 48, height: 36, borderRadius: 6, background: 'rgba(148,163,184,0.15)' }} />
+                      )}
+                    </td>
                     <td><span className={styles.dealerName}>{listing.dealers?.name || '—'}</span></td>
                     <td><span className={styles.vehicleName}>{listing.year} {listing.make} {listing.model}</span></td>
                     <td className={styles.price}>{formatPrice(listing.price_usd)}</td>
                     <td><span className={styles.statusBadge} data-status={listing.status}>{formatStatusLabel(listing.status)}</span></td>
                     <td className={styles.muted}>{formatDate(listing.created_at)}</td>
                     <td className={styles.actionsCell}>
+                      <Link
+                        href={`/admin/listings/${listing.id}`}
+                        style={{
+                          display: 'inline-block',
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: 6,
+                          border: '1px solid #334155',
+                          color: '#cbd5e1',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          marginRight: '0.4rem',
+                        }}
+                      >
+                        View
+                      </Link>
                       {listing.status === 'pending_review' && (
                         <>
                           <button
