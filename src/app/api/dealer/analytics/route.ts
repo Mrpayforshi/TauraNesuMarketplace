@@ -13,7 +13,7 @@ import { createServerSupabaseClient } from '@/lib/supabase';
  *   "period_days": 30,
  *   "active_listings": 5,
  *   "listings": [
- *     { id, make, model, year, price_usd, status, view_count, created_at },
+ *     { id, make, model, year, price_usd, status, view_count, created_at, primary_image_url },
  *     ...
  *   ],
  *   "leads_received": 12,
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Step 3b: Get listings performance (exclude soft-deleted listings)
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
-      .select('id, make, model, year, price_usd, status, created_at')
+      .select('id, make, model, year, price_usd, status, created_at, primary_image_url')
       .eq('dealer_id', dealer.id)
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
