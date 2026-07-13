@@ -15,6 +15,46 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 };
 
 /**
+ * GET /api/admin/submissions/[id]
+ * Fetch a single submission, with images and dealer leads.
+ * (There was previously no way to fetch a submission on its own — only
+ * the full list endpoint existed.)
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = params;
+    const supabase = createAdminClient();
+
+    const { data: submission, error } = await supabase
+      .from('submissions')
+      .select(`
+        *,
+        submission_images ( id, image_url, display_order ),
+        leads ( id, dealer_id, action, created_at, dealers ( id, name ) )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error || !submission) {
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ submission }, { status: 200 });
+  } catch (error) {
+    console.error('GET /admin/submissions/[id] error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
  * PATCH /api/admin/submissions/[id]
  * Set valuation range, update status, add notes, or reject with a reason.
  * Body: { status?, valuation_min_usd?, valuation_max_usd?, valuation_notes?, rejection_reason? }
