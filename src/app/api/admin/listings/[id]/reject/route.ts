@@ -4,7 +4,8 @@ import { createAdminClient } from '@/lib/supabase';
 
 /**
  * PATCH /api/admin/listings/[id]/reject
- * Sets listing status to 'rejected'. Requires { reason } in body.
+ * Sets listing status to 'rejected' and stores the reason.
+ * Requires { reason } in body.
  */
 export async function PATCH(
   request: NextRequest,
@@ -35,9 +36,12 @@ export async function PATCH(
 
     const supabase = createAdminClient();
 
+    // NOTE: this used to only set status, silently discarding the reason
+    // the caller was required to provide — rejection_reason now exists on
+    // the listings table (added alongside this fix) so it's actually saved.
     const { data, error } = await supabase
       .from('listings')
-      .update({ status: 'rejected' })
+      .update({ status: 'rejected', rejection_reason: reason.trim() })
       .eq('id', id)
       .select()
       .single();
