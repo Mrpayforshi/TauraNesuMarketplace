@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+  import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import ListingGallery from './ListingGallery';
 import styles from './listing.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -91,36 +92,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
 
               {/* Image gallery */}
               <div className={styles.gallery}>
-                {images.length > 0 ? (
-                  <>
-                    <div className={styles.mainImgWrap}>
-                      <img src={images[0]} alt={listingLabel} className={styles.mainImg} id="main-img" />
-                      {listing.body_type && <span className={styles.galleryBadge}>{listing.body_type}</span>}
-                    </div>
-                    {images.length > 1 && (
-                      <div className={styles.thumbRow}>
-                        {images.slice(1, 5).map((img, i) => (
-                          <div key={i} className={styles.thumbWrap}>
-                            <img src={img} alt={`${listingLabel} - view ${i + 2}`} className={styles.thumb} />
-                            {i === 3 && images.length > 5 && (
-                              <div className={styles.thumbMore}>+{images.length - 5}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className={styles.noImage}>
-                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.2">
-                      <rect x="1" y="3" width="15" height="13" rx="2"/>
-                      <path d="M16 8h4l3 3v5h-7V8z"/>
-                      <circle cx="5.5" cy="18.5" r="2.5"/>
-                      <circle cx="18.5" cy="18.5" r="2.5"/>
-                    </svg>
-                    <p>No photos available</p>
-                  </div>
-                )}
+                <ListingGallery images={images} listingLabel={listingLabel} bodyType={listing.body_type} />
               </div>
 
               {/* Specs table */}
