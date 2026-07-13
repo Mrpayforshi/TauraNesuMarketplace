@@ -100,10 +100,7 @@ export default function AdminListingViewPage() {
           backLabel="Back to listings"
           note={
             listing.status === 'rejected' ? (
-              <>
-                This listing was rejected. Note: the rejection reason isn&apos;t currently saved anywhere in the
-                database — see the note below about the reject endpoint.
-              </>
+              <>Rejected{listing.rejection_reason ? `: ${listing.rejection_reason}` : ' — no reason on file.'}</>
             ) : undefined
           }
           actions={
