@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('listings')
       .select(`
-        id, make, model, year, price_usd, status, created_at,
+        id, make, model, year, price_usd, status, created_at, primary_image_url,
         dealers ( id, name )
       `)
       .order('created_at', { ascending: false });
