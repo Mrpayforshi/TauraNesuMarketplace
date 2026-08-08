@@ -8,14 +8,14 @@ import styles from './edit.module.css';
 import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 /* ── Constants ── */
-const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'] as const;
+const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan', 'truck', 'bus'] as const;
 const TRANSMISSIONS = ['automatic', 'manual'] as const;
 const FUEL_TYPES = ['petrol', 'diesel'] as const;
 const CONDITIONS = ['excellent', 'good', 'fair'] as const;
 const DRIVES = ['rhd', 'lhd'] as const;
 
 const LABEL: Record<string, string> = {
-  suv: 'SUV', sedan: 'Sedan', hatchback: 'Hatchback', pickup: 'Pickup', minivan: 'Minivan',
+  suv: 'SUV', sedan: 'Sedan', hatchback: 'Hatchback', pickup: 'Pickup', minivan: 'Minivan', truck: 'Truck', bus: 'Bus',
   automatic: 'Automatic', manual: 'Manual',
   petrol: 'Petrol', diesel: 'Diesel',
   excellent: 'Excellent', good: 'Good', fair: 'Fair',
