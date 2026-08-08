@@ -24,7 +24,7 @@ interface DealerOption {
   status: string;
 }
 
-const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'] as const;
+const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan', 'truck', 'bus'] as const;
 const TRANSMISSIONS = ['automatic', 'manual'] as const;
 const FUEL_TYPES = ['petrol', 'diesel'] as const;
 const CONDITIONS = ['excellent', 'good', 'fair'] as const;
