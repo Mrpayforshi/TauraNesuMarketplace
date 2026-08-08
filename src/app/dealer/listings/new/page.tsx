@@ -8,7 +8,7 @@ import styles from './new.module.css';
 import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 /* ── Constants (must match API validation) ── */
-const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'] as const;
+const BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan', 'truck', 'bus'] as const;
 const TRANSMISSIONS = ['automatic', 'manual'] as const;
 const FUEL_TYPES = ['petrol', 'diesel'] as const;
 const CONDITIONS = ['excellent', 'good', 'fair'] as const;
