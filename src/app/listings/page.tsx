@@ -5,8 +5,9 @@ import styles from './listings.module.css';
 
 export const dynamic = 'force-dynamic';
 
-const MAKES = ['Toyota','Honda','BMW','Mercedes-Benz','Audi','Volkswagen','Mazda','Nissan','Hyundai','Ford','Isuzu','Mitsubishi','Subaru','Land Rover','Jeep'];
-const BODY_TYPES = ['SUV','Sedan','Hatchback','Pickup','Minivan','Coupe','Convertible','Wagon'];
+const MAKES = ['Toyota','Honda','BMW','Mercedes-Benz','Audi','Volkswagen','Mazda','Nissan','Hyundai','Ford','Isuzu','Mitsubishi','Subaru','Land Rover','Jeep','Hino','UD Trucks','Scania','MAN','Foton','FAW','Fuso','Volvo','Yutong','King Long','Golden Dragon','Higer','Ashok Leyland'];
+const BODY_TYPES = ['SUV','Sedan','Hatchback','Pickup','Minivan','Coupe','Convertible','Wagon','Truck','Bus'];
+
 const YEARS = Array.from({ length: 26 }, (_, i) => 2025 - i);
 const PAGE_SIZE = 12;
 
