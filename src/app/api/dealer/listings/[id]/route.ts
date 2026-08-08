@@ -3,7 +3,7 @@ import { getDealerFromRequest } from '@/lib/dealer-auth';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Allowed enum values
-const ALLOWED_BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan'];
+const ALLOWED_BODY_TYPES = ['suv', 'sedan', 'hatchback', 'pickup', 'minivan', 'truck', 'bus'];
 const ALLOWED_TRANSMISSIONS = ['automatic', 'manual'];
 const ALLOWED_FUEL_TYPES = ['petrol', 'diesel'];
 const ALLOWED_CONDITIONS = ['excellent', 'good', 'fair'];
