@@ -15,7 +15,7 @@ const CONDITIONS = ['excellent', 'good', 'fair'] as const;
 const DRIVES = ['rhd', 'lhd'] as const;
 
 const LABEL: Record<string, string> = {
-  suv: 'SUV', sedan: 'Sedan', hatchback: 'Hatchback', pickup: 'Pickup', minivan: 'Minivan',
+  suv: 'SUV', sedan: 'Sedan', hatchback: 'Hatchback', pickup: 'Pickup', minivan: 'Minivan', truck: 'Truck', bus: 'Bus',
   automatic: 'Automatic', manual: 'Manual',
   petrol: 'Petrol', diesel: 'Diesel',
   excellent: 'Excellent', good: 'Good', fair: 'Fair',
