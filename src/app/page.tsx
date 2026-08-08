@@ -71,7 +71,7 @@ export default async function HomePage() {
             </form>
 
             <div className={styles.heroPills}>
-              {['SUVs','Sedans','Hatchbacks','Pickups','Under $10k','Specials'].map(label => (
+              {['SUVs','Sedans','Hatchbacks','Pickups','Trucks','Buses','Under $10k','Specials'].map(label => (
                 <Link
                   key={label}
                   href={`/listings?q=${encodeURIComponent(label)}`}
@@ -269,7 +269,9 @@ export default async function HomePage() {
                 { label: 'Hatchback', img: '/images/body-hatchback.png', href: '/listings?body_type=hatchback' },
                 { label: 'Pickup',    img: '/images/body-pickup.png',    href: '/listings?body_type=pickup' },
                 { label: 'Minivan',   img: '/images/body-minivan.png',   href: '/listings?body_type=minivan' },
-              ].map(({ label, img, href }) => (
+                { label: 'Truck',     img: '/images/body-truck.png',     href: '/listings?body_type=truck' },
+                { label: 'Bus',       img: '/images/body-bus.png',       href: '/listings?body_type=bus' },
+              ].map(({ label, img, href }) =>
                 <Link key={label} href={href} className={styles.bodyTypeCard}>
                   <img src={img} alt={label} className={styles.bodyTypeImg} />
                   <span className={styles.bodyTypeLabel}>{label}</span>
@@ -351,6 +353,8 @@ export default async function HomePage() {
                 <Link href="/listings?body_type=hatchback" className={styles.footerLink}>Hatchbacks</Link>
                 <Link href="/listings?body_type=pickup" className={styles.footerLink}>Pickups</Link>
                 <Link href="/listings?body_type=minivan" className={styles.footerLink}>Minivans</Link>
+                <Link href="/listings?body_type=truck" className={styles.footerLink}>Trucks</Link>
+                <Link href="/listings?body_type=bus" className={styles.footerLink}>Buses</Link>
                 <Link href="/listings?specials=true" className={styles.footerLink}>Car Specials</Link>
               </div>
 
