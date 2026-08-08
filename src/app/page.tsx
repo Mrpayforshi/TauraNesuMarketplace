@@ -271,6 +271,9 @@ export default async function HomePage() {
                 { label: 'Minivan',   img: '/images/body-minivan.png',   href: '/listings?body_type=minivan' },
                 { label: 'Truck',     img: '/images/body-truck.png',     href: '/listings?body_type=truck' },
                 { label: 'Bus',       img: '/images/body-bus.png',       href: '/listings?body_type=bus' },
+              ].map(({ label, img, href }) => (
+                { label: 'Truck',     img: '/images/body-truck.png',     href: '/listings?body_type=truck' },
+                { label: 'Bus',       img: '/images/body-bus.png',       href: '/listings?body_type=bus' },
               ].map(({ label, img, href }) =>
                 <Link key={label} href={href} className={styles.bodyTypeCard}>
                   <img src={img} alt={label} className={styles.bodyTypeImg} />
@@ -356,7 +359,6 @@ export default async function HomePage() {
                 <Link href="/listings?body_type=truck" className={styles.footerLink}>Trucks</Link>
                 <Link href="/listings?body_type=bus" className={styles.footerLink}>Buses</Link>
                 <Link href="/listings?specials=true" className={styles.footerLink}>Car Specials</Link>
-              </div>
 
               <div className={styles.footerCol}>
                 <h4 className={styles.footerColHeading}>PRICE RANGE</h4>
