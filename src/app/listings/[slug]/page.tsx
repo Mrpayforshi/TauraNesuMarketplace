@@ -92,7 +92,16 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
 
               {/* Image gallery */}
               <div className={styles.gallery}>
-                <ListingGallery images={images} listingLabel={listingLabel} bodyType={listing.body_type} />
+                <ListingGallery
+                  images={images}
+                  listingLabel={listingLabel}
+                  bodyType={listing.body_type}
+                  priceUsd={listing.price_usd}
+                  year={listing.year}
+                  mileageKm={listing.mileage_km}
+                  fuelType={listing.fuel_type}
+                />
+
               </div>
 
               {/* Specs table */}
