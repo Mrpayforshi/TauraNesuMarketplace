@@ -27,6 +27,11 @@ interface FormData {
   mileage_km: string; body_type: string; transmission: string;
   fuel_type: string; colour: string; condition: string; drive: string;
   description: string; vin: string; is_special: boolean;
+  trade_in_available: boolean;
+  trade_in_notes: string;
+  trade_in_min_year: string;
+  trade_in_max_mileage_km: string;
+  trade_in_accepted_body_types: string[];
 }
 
 interface ExistingImage {
@@ -50,8 +55,13 @@ export default function EditListingPage() {
     make: '', model: '', year: '', price_usd: '', mileage_km: '',
     body_type: '', transmission: '', fuel_type: '', colour: '',
     condition: '', drive: '', description: '', vin: '', is_special: false,
+    trade_in_available: false,
+    trade_in_notes: '',
+    trade_in_min_year: '',
+    trade_in_max_mileage_km: '',
+    trade_in_accepted_body_types: [],
   });
-  const [errors, setErrors] = useState<Partial<FormData & { general: string }>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>> & { general?: string }>({});
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -93,6 +103,11 @@ export default function EditListingPage() {
           description: l.description ?? '',
           vin: l.vin ?? '',
           is_special: l.is_special ?? false,
+          trade_in_available: l.trade_in_available ?? false,
+          trade_in_notes: l.trade_in_notes ?? '',
+          trade_in_min_year: l.trade_in_min_year != null ? String(l.trade_in_min_year) : '',
+          trade_in_max_mileage_km: l.trade_in_max_mileage_km != null ? String(l.trade_in_max_mileage_km) : '',
+          trade_in_accepted_body_types: Array.isArray(l.trade_in_accepted_body_types) ? l.trade_in_accepted_body_types : [],
         });
         setExistingImages(
           (l.listing_images ?? l.images ?? []).sort(
@@ -108,15 +123,28 @@ export default function EditListingPage() {
   }, [id, router]);
 
   /* ── Field change ── */
-  function set(field: keyof FormData, value: string | boolean) {
+  function set(field: keyof FormData, value: string | boolean | string[]) {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: undefined }));
     setSaveSuccess(false);
   }
 
+  function toggleTradeInBodyType(bt: string) {
+    setForm(prev => {
+      const has = prev.trade_in_accepted_body_types.includes(bt);
+      return {
+        ...prev,
+        trade_in_accepted_body_types: has
+          ? prev.trade_in_accepted_body_types.filter(v => v !== bt)
+          : [...prev.trade_in_accepted_body_types, bt],
+      };
+    });
+    setSaveSuccess(false);
+  }
+
   /* ── Validate ── */
   function validate(): boolean {
-    const e: Partial<FormData & { general: string }> = {};
+    const e: Partial<Record<keyof FormData, string>> & { general?: string } = {};
     const currentYear = new Date().getFullYear();
     if (!form.make.trim()) e.make = 'Required';
     if (!form.model.trim()) e.model = 'Required';
@@ -133,6 +161,18 @@ export default function EditListingPage() {
     if (!form.colour.trim()) e.colour = 'Required';
     if (!form.condition) e.condition = 'Required';
     if (!form.drive) e.drive = 'Required';
+
+    if (form.trade_in_available && form.trade_in_min_year) {
+      const tYr = parseInt(form.trade_in_min_year);
+      if (isNaN(tYr) || tYr < 1990 || tYr > currentYear) {
+        e.trade_in_min_year = `Enter a year between 1990 and ${currentYear}`;
+      }
+    }
+    if (form.trade_in_available && form.trade_in_max_mileage_km) {
+      const tKm = parseInt(form.trade_in_max_mileage_km);
+      if (isNaN(tKm) || tKm < 0) e.trade_in_max_mileage_km = 'Enter a valid mileage';
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -162,6 +202,11 @@ export default function EditListingPage() {
           description: form.description.trim() || null,
           vin: form.vin.trim() || null,
           is_special: form.is_special,
+          trade_in_available: form.trade_in_available,
+          trade_in_notes: form.trade_in_available ? (form.trade_in_notes.trim() || null) : null,
+          trade_in_min_year: form.trade_in_available && form.trade_in_min_year ? parseInt(form.trade_in_min_year) : null,
+          trade_in_max_mileage_km: form.trade_in_available && form.trade_in_max_mileage_km ? parseInt(form.trade_in_max_mileage_km) : null,
+          trade_in_accepted_body_types: form.trade_in_available && form.trade_in_accepted_body_types.length > 0 ? form.trade_in_accepted_body_types : null,
         }),
       });
       const data = await res.json();
@@ -480,6 +525,53 @@ export default function EditListingPage() {
                   <p className={styles.hint}>Featured listings appear with a highlight badge.</p>
                 </div>
               </div>
+
+              {/* ── Trade-in section ── */}
+              <div className={styles.field} style={{ marginTop: '0.5rem' }}>
+                <label className={styles.label}>Accept Trade-Ins</label>
+                <button type="button"
+                  className={`${styles.toggle} ${form.trade_in_available ? styles.toggleOn : ''}`}
+                  onClick={() => set('trade_in_available', !form.trade_in_available)}>
+                  <span className={styles.toggleThumb} />
+                  <span className={styles.toggleLabel}>{form.trade_in_available ? 'Trade-in accepted' : 'No trade-in'}</span>
+                </button>
+                <p className={styles.hint}>Let buyers offer their own car as part payment for this vehicle.</p>
+              </div>
+
+              {form.trade_in_available && (
+                <div className={styles.grid2} style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem', marginTop: '0.25rem' }}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Min. Trade-In Year <span className={styles.optional}>(optional)</span></label>
+                    <input className={`${styles.input} ${errors.trade_in_min_year ? styles.inputError : ''}`}
+                      value={form.trade_in_min_year} type="number" min="1990" max={new Date().getFullYear()}
+                      onChange={e => set('trade_in_min_year', e.target.value)} placeholder="e.g. 2012" />
+                    {errors.trade_in_min_year && <span className={styles.fieldError}>{errors.trade_in_min_year}</span>}
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Max. Trade-In Mileage (km) <span className={styles.optional}>(optional)</span></label>
+                    <input className={`${styles.input} ${errors.trade_in_max_mileage_km ? styles.inputError : ''}`}
+                      value={form.trade_in_max_mileage_km} type="number" min="0"
+                      onChange={e => set('trade_in_max_mileage_km', e.target.value)} placeholder="e.g. 150000" />
+                    {errors.trade_in_max_mileage_km && <span className={styles.fieldError}>{errors.trade_in_max_mileage_km}</span>}
+                  </div>
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
+                    <label className={styles.label}>Accepted Trade-In Body Types <span className={styles.optional}>(optional — leave blank for any)</span></label>
+                    <div className={styles.chipGroup}>
+                      {BODY_TYPES.map(v => (
+                        <button key={v} type="button"
+                          className={`${styles.chip} ${form.trade_in_accepted_body_types.includes(v) ? styles.chipActive : ''}`}
+                          onClick={() => toggleTradeInBodyType(v)}>{LABEL[v]}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
+                    <label className={styles.label}>Trade-In Notes <span className={styles.optional}>(optional)</span></label>
+                    <textarea className={styles.textarea} value={form.trade_in_notes} rows={3}
+                      onChange={e => set('trade_in_notes', e.target.value)}
+                      placeholder="Anything else buyers should know, e.g. 'Must be running and accident-free' or 'Open to any deal — make an offer'" />
+                  </div>
+                </div>
+              )}
 
               <div className={styles.actions}>
                 <Link href="/dealer/dashboard" className={styles.cancelBtn}>Cancel</Link>
