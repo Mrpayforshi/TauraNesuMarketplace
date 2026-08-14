@@ -1,4 +1,4 @@
-  import { notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
@@ -20,6 +20,8 @@ async function getListing(slug: string) {
       id, make, model, year, price_usd, mileage_km, body_type, slug,
       transmission, fuel_type, colour, description, condition, drive,
       status, created_at,
+      trade_in_available, trade_in_notes, trade_in_min_year,
+      trade_in_max_mileage_km, trade_in_accepted_body_types,
       listing_images ( image_url, display_order ),
       dealers ( id, name, phone, city )
     `)
@@ -69,6 +71,12 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
     { label: 'Condition',    value: listing.condition },
     { label: 'Drive',        value: listing.drive },
   ].filter(s => s.value);
+
+  const tradeInDetails = [
+    { label: 'Min. year accepted',    value: listing.trade_in_min_year ? String(listing.trade_in_min_year) : null },
+    { label: 'Max. mileage accepted', value: listing.trade_in_max_mileage_km ? `${listing.trade_in_max_mileage_km.toLocaleString()} km` : null },
+    { label: 'Body types accepted',   value: Array.isArray(listing.trade_in_accepted_body_types) && listing.trade_in_accepted_body_types.length > 0 ? listing.trade_in_accepted_body_types.join(', ') : null },
+  ].filter(d => d.value);
 
   return (
     <>
@@ -134,10 +142,19 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 <p className={styles.price}>${listing.price_usd?.toLocaleString()}</p>
                 <p className={styles.priceNote}>USD · Price as listed</p>
 
+                {listing.trade_in_available && (
+                  <div className={styles.tradeBadge}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                    Trade-in accepted
+                  </div>
+                )}
+
                 {/* CTA buttons */}
                 <div className={styles.ctaStack}>
                   {phone ? (
-                    <a
+                    
                       href={`https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I'm interested in the ${listingLabel} listed on TauraNesu. Is it still available?`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -183,6 +200,26 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                   <span>Always inspect the vehicle in person before purchasing.</span>
                 </div>
               </div>
+
+              {/* Trade-in details */}
+              {listing.trade_in_available && (tradeInDetails.length > 0 || listing.trade_in_notes) && (
+                <div className={styles.tradeInCard}>
+                  <h2 className={styles.specsTitle}>Trade-In Accepted</h2>
+                  {tradeInDetails.length > 0 && (
+                    <div className={styles.specsGrid}>
+                      {tradeInDetails.map(d => (
+                        <div key={d.label} className={styles.specRow}>
+                          <span className={styles.specLabel}>{d.label}</span>
+                          <span className={styles.specValue}>{d.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {listing.trade_in_notes && (
+                    <p className={styles.tradeInNotes}>{listing.trade_in_notes}</p>
+                  )}
+                </div>
+              )}
 
               {/* Favourite / share */}
               <div className={styles.actionRow}>
