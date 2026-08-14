@@ -12,13 +12,6 @@ const ALLOWED_DRIVES = ['rhd', 'lhd'];
 // Non-editable fields
 const NON_EDITABLE_FIELDS = ['dealer_id', 'status', 'slug', 'created_at', 'published_at'];
 
-// Helper: Generate slug with random suffix
-function generateSlug(make: string, model: string, year: number, city: string): string {
-  const base = `${make}-${model}-${year}-${city}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const suffix = Math.random().toString(36).substring(2, 8);
-  return `${base}-${suffix}`;
-}
-
 // Helper: Validate field types and values for PATCH
 function validateFieldTypes(body: Record<string, unknown>): { valid: boolean; error?: string } {
   const currentYear = new Date().getFullYear();
@@ -257,13 +250,11 @@ export async function PATCH(
       return NextResponse.json({ error: typeValidation.error }, { status: 400 });
     }
 
-    // Regenerate slug if make, model, or year are being updated
-    if ('make' in updateData || 'model' in updateData || 'year' in updateData) {
-      const make = (updateData.make as string) || listing.make;
-      const model = (updateData.model as string) || listing.model;
-      const year = (updateData.year as number) || listing.year;
-      updateData.slug = generateSlug(make, model, year, dealer.city ?? '');
-    }
+    // NOTE: slug is intentionally never regenerated here. Slugs are set once at
+    // creation and kept permanent for the life of the listing, so that links,
+    // bookmarks, and shared URLs never break as a result of a dealer edit —
+    // including edits to make/model/year. 'slug' is already stripped above via
+    // NON_EDITABLE_FIELDS.
 
     // Trim string fields
     if ('make' in updateData && typeof updateData.make === 'string') {
