@@ -130,6 +130,45 @@ function validateFieldTypes(body: Record<string, unknown>): { valid: boolean; er
     }
   }
 
+  // ── Trade-in fields (all optional) ──
+  if ('trade_in_available' in body && body.trade_in_available !== null && body.trade_in_available !== undefined) {
+    if (typeof body.trade_in_available !== 'boolean') {
+      return { valid: false, error: 'trade_in_available must be a boolean' };
+    }
+  }
+  if ('trade_in_notes' in body && body.trade_in_notes !== null && body.trade_in_notes !== undefined) {
+    if (typeof body.trade_in_notes !== 'string') {
+      return { valid: false, error: 'trade_in_notes must be a string' };
+    }
+  }
+  if ('trade_in_min_year' in body && body.trade_in_min_year !== null && body.trade_in_min_year !== undefined) {
+    if (typeof body.trade_in_min_year !== 'number' || !Number.isInteger(body.trade_in_min_year)) {
+      return { valid: false, error: 'trade_in_min_year must be an integer' };
+    }
+    if (body.trade_in_min_year < 1990 || body.trade_in_min_year > currentYear) {
+      return { valid: false, error: `trade_in_min_year must be between 1990 and ${currentYear}` };
+    }
+  }
+  if ('trade_in_max_mileage_km' in body && body.trade_in_max_mileage_km !== null && body.trade_in_max_mileage_km !== undefined) {
+    if (typeof body.trade_in_max_mileage_km !== 'number' || !Number.isInteger(body.trade_in_max_mileage_km)) {
+      return { valid: false, error: 'trade_in_max_mileage_km must be an integer' };
+    }
+    if (body.trade_in_max_mileage_km < 0) {
+      return { valid: false, error: 'trade_in_max_mileage_km must be non-negative' };
+    }
+  }
+  if ('trade_in_accepted_body_types' in body && body.trade_in_accepted_body_types !== null && body.trade_in_accepted_body_types !== undefined) {
+    if (!Array.isArray(body.trade_in_accepted_body_types)) {
+      return { valid: false, error: 'trade_in_accepted_body_types must be an array' };
+    }
+    const invalid = (body.trade_in_accepted_body_types as unknown[]).filter(
+      (v) => typeof v !== 'string' || !ALLOWED_BODY_TYPES.includes(v)
+    );
+    if (invalid.length > 0) {
+      return { valid: false, error: `trade_in_accepted_body_types must only contain: ${ALLOWED_BODY_TYPES.join(', ')}` };
+    }
+  }
+
   return { valid: true };
 }
 
