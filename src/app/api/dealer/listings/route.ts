@@ -106,6 +106,41 @@ function validateFieldTypes(body: Record<string, unknown>): { valid: boolean; er
     return { valid: false, error: `drive must be one of: ${ALLOWED_DRIVES.join(', ')}` };
   }
 
+  // ── Trade-in fields (all optional) ──
+  if (body.trade_in_available !== undefined && body.trade_in_available !== null && typeof body.trade_in_available !== 'boolean') {
+    return { valid: false, error: 'trade_in_available must be a boolean' };
+  }
+  if (body.trade_in_notes !== undefined && body.trade_in_notes !== null && typeof body.trade_in_notes !== 'string') {
+    return { valid: false, error: 'trade_in_notes must be a string' };
+  }
+  if (body.trade_in_min_year !== undefined && body.trade_in_min_year !== null) {
+    if (typeof body.trade_in_min_year !== 'number' || !Number.isInteger(body.trade_in_min_year)) {
+      return { valid: false, error: 'trade_in_min_year must be an integer' };
+    }
+    if (body.trade_in_min_year < 1990 || body.trade_in_min_year > currentYear) {
+      return { valid: false, error: `trade_in_min_year must be between 1990 and ${currentYear}` };
+    }
+  }
+  if (body.trade_in_max_mileage_km !== undefined && body.trade_in_max_mileage_km !== null) {
+    if (typeof body.trade_in_max_mileage_km !== 'number' || !Number.isInteger(body.trade_in_max_mileage_km)) {
+      return { valid: false, error: 'trade_in_max_mileage_km must be an integer' };
+    }
+    if (body.trade_in_max_mileage_km < 0) {
+      return { valid: false, error: 'trade_in_max_mileage_km must be non-negative' };
+    }
+  }
+  if (body.trade_in_accepted_body_types !== undefined && body.trade_in_accepted_body_types !== null) {
+    if (!Array.isArray(body.trade_in_accepted_body_types)) {
+      return { valid: false, error: 'trade_in_accepted_body_types must be an array' };
+    }
+    const invalid = (body.trade_in_accepted_body_types as unknown[]).filter(
+      (v) => typeof v !== 'string' || !ALLOWED_BODY_TYPES.includes(v)
+    );
+    if (invalid.length > 0) {
+      return { valid: false, error: `trade_in_accepted_body_types must only contain: ${ALLOWED_BODY_TYPES.join(', ')}` };
+    }
+  }
+
   return { valid: true };
 }
 
@@ -229,6 +264,8 @@ export async function POST(request: NextRequest) {
       dealer.city ?? 'zw'
     );
 
+    const tradeInAvailable = (body.trade_in_available as boolean | undefined) ?? false;
+
     const insertPayload = {
       dealer_id: dealer.id,
       make: (body.make as string).trim(),
@@ -245,6 +282,12 @@ export async function POST(request: NextRequest) {
       description: (body.description as string | undefined) ?? null,
       vin: (body.vin as string | undefined) ?? null,
       is_special: (body.is_special as boolean | undefined) ?? false,
+      // Trade-in: only persist the details if the flag itself is on
+      trade_in_available: tradeInAvailable,
+      trade_in_notes: tradeInAvailable ? ((body.trade_in_notes as string | undefined)?.trim() || null) : null,
+      trade_in_min_year: tradeInAvailable ? ((body.trade_in_min_year as number | undefined) ?? null) : null,
+      trade_in_max_mileage_km: tradeInAvailable ? ((body.trade_in_max_mileage_km as number | undefined) ?? null) : null,
+      trade_in_accepted_body_types: tradeInAvailable ? ((body.trade_in_accepted_body_types as string[] | undefined) ?? null) : null,
       slug,
       status: 'pending_review' as const,
     };
