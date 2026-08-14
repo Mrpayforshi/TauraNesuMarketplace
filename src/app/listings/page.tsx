@@ -19,6 +19,7 @@ interface SearchParams {
   max_price?: string;
   min_year?: string;
   max_year?: string;
+  trade_in?: string;
   page?: string;
 }
 
@@ -30,7 +31,7 @@ async function getListings(params: SearchParams) {
 
   let query = supabase
     .from('listings')
-    .select('id,make,model,year,price_usd,body_type,slug,primary_image_url,mileage_km,transmission,fuel_type,dealers(name)', { count: 'exact' })
+    .select('id,make,model,year,price_usd,body_type,slug,primary_image_url,mileage_km,transmission,fuel_type,trade_in_available,dealers(name)', { count: 'exact' })
     .eq('status', 'active');
 
   if (params.q) {
@@ -42,6 +43,7 @@ async function getListings(params: SearchParams) {
   if (params.max_price) query = query.lte('price_usd', parseInt(params.max_price));
   if (params.min_year) query = query.gte('year', parseInt(params.min_year));
   if (params.max_year) query = query.lte('year', parseInt(params.max_year));
+  if (params.trade_in === 'true') query = query.eq('trade_in_available', true);
 
   query = query.order('created_at', { ascending: false }).range(from, to);
 
@@ -71,6 +73,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
       label: `${searchParams.min_year || 'Any'} – ${searchParams.max_year || 'Any'}`,
       key: 'year',
     },
+    searchParams.trade_in === 'true' && { label: 'Trade-in accepted', key: 'trade_in' },
   ].filter(Boolean) as { label: string; key: string }[];
 
   const removeFilter = (key: string) => {
@@ -100,6 +103,9 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                 {searchParams.body_type && <input type="hidden" name="body_type" value={searchParams.body_type} />}
                 {searchParams.min_price && <input type="hidden" name="min_price" value={searchParams.min_price} />}
                 {searchParams.max_price && <input type="hidden" name="max_price" value={searchParams.max_price} />}
+                {searchParams.min_year && <input type="hidden" name="min_year" value={searchParams.min_year} />}
+                {searchParams.max_year && <input type="hidden" name="max_year" value={searchParams.max_year} />}
+                {searchParams.trade_in === 'true' && <input type="hidden" name="trade_in" value="true" />}
                 <span className={styles.searchIcon}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -180,6 +186,21 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                     </div>
                   </div>
 
+                  {/* Trade-in */}
+                  <div className={styles.filterGroup}>
+                    <label className={styles.filterLabel}>Trade-In</label>
+                    <label className={`${styles.bodyChip} ${searchParams.trade_in === 'true' ? styles.bodyChipActive : ''}`}>
+                      <input
+                        type="checkbox"
+                        name="trade_in"
+                        value="true"
+                        defaultChecked={searchParams.trade_in === 'true'}
+                        className={styles.srOnly}
+                      />
+                      Trade-in accepted
+                    </label>
+                  </div>
+
                   <button type="submit" className={styles.applyBtn}>Apply Filters</button>
                 </form>
               </div>
@@ -220,6 +241,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Sea
                       <Link key={listing.id} href={`/listings/${listing.slug}`} className={styles.card}>
                         <div className={styles.cardImgWrap}>
                           {listing.body_type && <span className={styles.cardBadge}>{listing.body_type}</span>}
+                          {listing.trade_in_available && <span className={styles.tradeBadge}>Trade-in OK</span>}
                           {firstImg ? (
                             <img src={firstImg} alt={`${listing.make} ${listing.model}`} className={styles.cardImg} />
                           ) : (
