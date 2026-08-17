@@ -9,7 +9,7 @@ async function getLatestListings() {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('listings')
-    .select('id, make, model, year, price_usd, body_type, slug, primary_image_url, dealers(name, phone)')
+    .select('id, make, model, year, price_usd, body_type, slug, primary_image_url, trade_in_available, dealers(name, phone)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6);
@@ -71,10 +71,20 @@ export default async function HomePage() {
             </form>
 
             <div className={styles.heroPills}>
-              {['SUVs','Sedans','Hatchbacks','Pickups','Trucks','Buses','Under $10k','Specials'].map(label => (
+              {[
+                { label: 'SUVs' },
+                { label: 'Sedans' },
+                { label: 'Hatchbacks' },
+                { label: 'Pickups' },
+                { label: 'Trucks' },
+                { label: 'Buses' },
+                { label: 'Under $10k' },
+                { label: 'Specials' },
+                { label: 'Trade-in Accepted', href: '/listings?trade_in=true' },
+              ].map(({ label, href }) => (
                 <Link
                   key={label}
-                  href={`/listings?q=${encodeURIComponent(label)}`}
+                  href={href || `/listings?q=${encodeURIComponent(label)}`}
                   className={styles.heroPill}
                 >
                   {label}
@@ -216,6 +226,9 @@ export default async function HomePage() {
                         {listing.body_type && (
                           <span className={styles.bodyBadge}>{listing.body_type}</span>
                         )}
+                        {listing.trade_in_available && (
+                          <span className={styles.tradeBadge}>Trade-in OK</span>
+                        )}
                         {firstImg ? (
                           <img src={firstImg} alt={`${listing.make} ${listing.model} ${listing.year}`} className={styles.listingImg} />
                         ) : (
@@ -356,6 +369,7 @@ export default async function HomePage() {
                 <Link href="/listings?body_type=truck" className={styles.footerLink}>Trucks</Link>
                 <Link href="/listings?body_type=bus" className={styles.footerLink}>Buses</Link>
                 <Link href="/listings?specials=true" className={styles.footerLink}>Car Specials</Link>
+                <Link href="/listings?trade_in=true" className={styles.footerLink}>Trade-in Accepted</Link>
               </div>
 
               <div className={styles.footerCol}>
