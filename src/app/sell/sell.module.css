@@ -474,3 +474,27 @@
   color: rgba(255,255,255,0.35);
 }
 .trustItem svg { color: rgba(255,255,255,0.25); }
+
+/* ============================================================
+   RESPONSIVE — added
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .hero { padding: 36px 16px 28px; }
+  .heroSub { font-size: 0.92rem; }
+  .container { padding: 0 16px; }
+
+  /* Progress stepper: labels overflow on phones, so drop them and
+     shrink the dots/lines instead of trying to wrap "Vehicle Details" etc. */
+  .progress { padding: 24px 0 20px; }
+  .progressLabel { display: none; }
+  .progressDot { width: 26px; height: 26px; font-size: 0.72rem; }
+  .progressLine { margin: 0 4px; }
+
+  .summaryGrid { grid-template-columns: 100px 1fr; gap: 6px 10px; }
+
+  .actions { flex-wrap: wrap; }
+  .backBtn, .nextBtn { flex: 1; text-align: center; padding: 12px 16px; }
+
+  .trustBar { gap: 16px 24px; padding: 24px 0 0; }
+}
