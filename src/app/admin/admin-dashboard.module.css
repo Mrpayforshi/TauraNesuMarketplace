@@ -31,7 +31,7 @@
 }
 
 a.statCard:hover {
-  border-color: rgba(26,86,219,0.4);
+  border-color: rgba(255,206,27,0.4);
   transform: translateY(-2px);
 }
 
@@ -41,7 +41,7 @@ a.statCard:hover {
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 0.4rem;
 }
-.statIcon[data-color="blue"]   { background: rgba(26,86,219,0.15); color: var(--blue); }
+.statIcon[data-color="blue"]   { background: rgba(255,206,27,0.15); color: var(--blue); }
 .statIcon[data-color="green"]  { background: rgba(5,150,105,0.15); color: var(--green); }
 .statIcon[data-color="orange"] { background: rgba(217,119,6,0.15); color: var(--amber); }
 .statIcon[data-color="purple"] { background: rgba(139,92,246,0.15); color: #A78BFA; }
