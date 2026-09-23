@@ -442,3 +442,28 @@
   font-size: 0.85rem;
   color: rgba(255,255,255,0.4);
 }
+
+/* ============================================================
+   RESPONSIVE — added
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .container { padding: 0 16px; }
+  .topBar { padding: 16px 0; }
+
+  .topBarInner { gap: 14px; }
+  .pageTitle { font-size: 1.2rem; }
+
+  .searchBar { min-width: 0; max-width: none; width: 100%; }
+
+  .layout { padding-top: 20px; gap: 20px; }
+
+  .sidebarCard { padding: 16px; }
+
+  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .cardImgWrap { height: 130px; }
+  .cardBody { padding: 10px 12px 12px; }
+
+  .pagination { gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+  .pageBtn { padding: 8px 14px; font-size: 0.82rem; }
+}
