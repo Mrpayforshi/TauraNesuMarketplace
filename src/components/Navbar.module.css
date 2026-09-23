@@ -122,3 +122,75 @@
   transition: background 0.15s;
 }
 .sellBtn:hover { background: var(--blue-dark); }
+
+/* ===== Mobile menu (added) ===== */
+.menuToggle {
+  display: none;
+  background: transparent;
+  color: #fff;
+  padding: 6px;
+  margin-left: auto;
+  border-radius: 6px;
+}
+.menuToggle:hover { background: rgba(255,255,255,0.08); }
+
+@media (max-width: 768px) {
+  .inner {
+    flex-wrap: wrap;
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .menuToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menuPanel {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px 0 20px;
+    order: 3;
+  }
+
+  .menuPanelOpen {
+    display: flex;
+  }
+
+  .links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .navLink, .navLinkAccent {
+    padding: 10px 8px;
+    font-size: 1rem;
+  }
+
+  .searchForm {
+    max-width: none;
+    width: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+    gap: 8px;
+  }
+
+  .signIn {
+    text-align: center;
+    padding: 10px 8px;
+  }
+
+  .dealerBtn, .sellBtn {
+    text-align: center;
+    padding: 12px 16px;
+  }
+}
