@@ -75,7 +75,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #1A56DB;
+  background: #FFCE1B;
   flex-shrink: 0;
 }
 
@@ -90,7 +90,7 @@
 }
 
 .heroAccent {
-  color: #1A56DB;
+  color: #FFCE1B;
 }
 
 .heroSub {
@@ -132,7 +132,7 @@
 
 .heroSearchBtn {
   background: var(--blue);
-  color: #fff;
+  color: #0F172A;
   font-weight: 600;
   font-size: 0.95rem;
   padding: 14px 24px;
@@ -225,7 +225,7 @@
   display: inline-block;
   margin-top: 8px;
   background: var(--blue);
-  color: #fff;
+  color: #0F172A;
   font-weight: 600;
   font-size: 0.875rem;
   padding: 10px 18px;
