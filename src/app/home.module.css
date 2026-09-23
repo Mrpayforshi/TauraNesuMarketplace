@@ -789,3 +789,88 @@
   border-radius: 4px;
   letter-spacing: 0.02em;
 }
+
+/* ============================================================
+   RESPONSIVE — added
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .container { padding: 0 20px; }
+
+  .intentGrid { grid-template-columns: repeat(2, 1fr); }
+  .intentCardFeatured { grid-column: span 2; }
+
+  .budgetGrid { grid-template-columns: repeat(3, 1fr); }
+  .listingsGrid { grid-template-columns: repeat(3, 1fr); }
+  .bodyTypeGrid { grid-template-columns: repeat(3, 1fr); }
+
+  .sellBanner {
+    grid-template-columns: 1fr;
+    padding: 36px;
+  }
+  .sellCarWrap { display: none; }
+  .sellSteps { flex-wrap: wrap; justify-content: flex-start; gap: 20px; }
+
+  .footerGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+  .footerBrand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 16px; }
+
+  /* Hero */
+  .hero { min-height: 0; }
+  .heroCarLeft, .heroCarRight {
+    height: 45%;
+    opacity: 0.35;
+  }
+  .heroContent { padding: 40px 16px; gap: 16px; }
+  .heroHeadline { font-size: clamp(2.1rem, 9vw, 2.8rem); }
+  .heroSearch { max-width: 100%; }
+  .heroSearchInput { padding: 14px 14px 14px 42px; font-size: 0.9rem; }
+  .heroSearchBtn { padding: 14px 16px; font-size: 0.85rem; }
+  .heroPills { gap: 6px; }
+  .heroPill { font-size: 0.75rem; padding: 5px 12px; }
+
+  /* I want to */
+  .intentSection { padding: 40px 0; }
+  .intentGrid { grid-template-columns: 1fr; }
+  .intentCardFeatured { grid-column: span 1; }
+
+  /* Stats bar */
+  .statsBar {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 16px 0;
+    padding: 20px 16px;
+  }
+  .statItem { padding: 0; flex: 1 1 45%; }
+  .statDivider { display: none; }
+
+  /* Budget / listings / body type grids */
+  .budgetSection, .listingsSection, .bodyTypeSection { padding: 40px 0; }
+  .budgetGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .listingsGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .bodyTypeGrid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  .sectionHeader { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* Sell CTA */
+  .sellSection { padding: 32px 0 48px; }
+  .sellBanner { padding: 28px 20px; border-radius: 16px; }
+  .sellTitle { font-size: 1.3rem; }
+  .sellSteps { flex-direction: column; gap: 16px; }
+  .sellArrow { display: none; }
+  .sellStep { max-width: none; flex-direction: row; text-align: left; gap: 12px; }
+  .sellStepCircle { flex-shrink: 0; }
+
+  /* Footer */
+  .footer { padding: 40px 0 0; }
+  .footerGrid { grid-template-columns: 1fr; gap: 28px; }
+  .footerBrand { grid-column: auto; }
+  .footerBottom { padding: 16px 0; }
+  .footerAdminLink { position: static; transform: none; margin-top: 8px; display: inline-flex; }
+}
