@@ -25,7 +25,7 @@
 .addBtn {
   background: var(--blue);
   border: none;
-  color: #fff;
+  color: #0F172A;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
@@ -65,12 +65,12 @@
   transition: all 0.15s;
 }
 .chip:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
-.chipActive { background: rgba(26,86,219,0.18); border-color: var(--blue); color: #fff; }
+.chipActive { background: rgba(255,206,27,0.18); border-color: var(--blue); color: #fff; }
 
 .modalSaveBtn {
   background: var(--blue);
   border: none;
-  color: #fff;
+  color: #0F172A;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
@@ -83,7 +83,6 @@
 
 .body { padding: 2rem 2.5rem; }
 
-/* ── Tabs ── */
 .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
 
 .tab {
@@ -101,7 +100,7 @@
   transition: all 0.15s;
 }
 .tab:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
-.tabActive { background: rgba(26,86,219,0.16); border-color: var(--blue); color: #fff; }
+.tabActive { background: rgba(255,206,27,0.16); border-color: var(--blue); color: #fff; }
 
 .tabCount {
   background: rgba(255,255,255,0.1);
@@ -113,7 +112,6 @@
 }
 .tabActive .tabCount { background: var(--blue); }
 
-/* ── Loading ── */
 .skeletonList { display: flex; flex-direction: column; gap: 0.6rem; }
 .skeletonRow {
   height: 56px;
@@ -124,7 +122,6 @@
 }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-/* ── Error / Empty ── */
 .errorBox {
   display: flex; align-items: center; gap: 0.5rem;
   background: rgba(220,38,38,0.1);
@@ -145,7 +142,6 @@
 }
 .emptyState p { margin: 0; font-size: 0.9rem; }
 
-/* ── Table ── */
 .tableWrap {
   background: var(--navy-2);
   border: 1px solid rgba(255,255,255,0.08);
@@ -184,7 +180,6 @@
 .muted { color: rgba(255,255,255,0.55); }
 .price { font-weight: 600; color: #fff; }
 
-/* ── Badges ── */
 .statusBadge {
   display: inline-block;
   font-size: 0.72rem;
@@ -196,12 +191,11 @@
 .statusBadge[data-status="pending_review"] { background: rgba(217,119,6,0.15); color: var(--amber); }
 .statusBadge[data-status="active"]         { background: rgba(5,150,105,0.15); color: #34D399; }
 .statusBadge[data-status="rejected"]       { background: rgba(220,38,38,0.15); color: #F87171; }
-.statusBadge[data-status="sold"]           { background: rgba(26,86,219,0.15); color: #60A5FA; }
+.statusBadge[data-status="sold"]           { background: rgba(255,206,27,0.15); color: #FFE066; }
 .statusBadge[data-status="draft"]          { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
 .statusBadge[data-status="archived"]       { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.45); }
 .statusBadge[data-status="deleted"]        { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); }
 
-/* ── Action buttons ── */
 .actionsCell { display: flex; align-items: center; gap: 0.5rem; }
 
 .approveBtn {
@@ -232,7 +226,6 @@
 .rejectBtn:hover { opacity: 0.8; }
 .rejectBtn:disabled { opacity: 0.5; cursor: default; }
 
-/* ── Modal ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
