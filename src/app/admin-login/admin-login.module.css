@@ -50,7 +50,6 @@
   margin-bottom: 28px;
 }
 
-/* ── Form ──────────────────────────────────────────────────── */
 .form {
   display: flex;
   flex-direction: column;
@@ -86,7 +85,7 @@
 .input::placeholder { color: rgba(255,255,255,0.18); }
 .input:focus {
   border-color: var(--blue);
-  background: rgba(26,86,219,0.08);
+  background: rgba(255,206,27,0.08);
 }
 
 .passwordWrap {
@@ -129,7 +128,7 @@
   gap: 8px;
   padding: 13px;
   background: var(--blue);
-  color: #fff;
+  color: #0F172A;
   border: none;
   border-radius: var(--radius);
   font-family: 'DM Sans', sans-serif;
