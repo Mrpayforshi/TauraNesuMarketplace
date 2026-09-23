@@ -100,8 +100,8 @@ export default async function HomePage() {
             <p className={styles.intentLabel}>I want to...</p>
             <div className={styles.intentGrid}>
               <div className={styles.intentCard}>
-                <div className={styles.intentIcon} style={{background:'rgba(26,86,219,0.15)'}}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" strokeWidth="2">
+                <div className={styles.intentIcon} style={{background:'rgba(255,206,27,0.15)'}}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFCE1B" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
@@ -141,8 +141,8 @@ export default async function HomePage() {
         {/* ── STATS BAR ── */}
         <div className={styles.statsBar}>
           <div className={styles.statItem}>
-            <span className={styles.statIcon} style={{background:'rgba(26,86,219,0.15)'}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" strokeWidth="2">
+            <span className={styles.statIcon} style={{background:'rgba(255,206,27,0.15)'}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFCE1B" strokeWidth="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </span>
@@ -248,7 +248,7 @@ export default async function HomePage() {
                         <p className={styles.listingDealer}>{dealer?.name || 'TauraNesu Dealer'}</p>
                       </div>
                       {phone ? (
-                        <a
+                        
                           href={`https://wa.me/${phone}`}
                           target="_blank"
                           rel="noopener noreferrer"
