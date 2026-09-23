@@ -9,7 +9,6 @@
   padding-bottom: 80px;
 }
 
-/* ── Hero ──────────────────────────────────────────────────── */
 .hero {
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
   border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -33,14 +32,12 @@
   line-height: 1.6;
 }
 
-/* ── Container ─────────────────────────────────────────────── */
 .container {
   max-width: 780px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
-/* ── Progress stepper ──────────────────────────────────────── */
 .progress {
   display: flex;
   align-items: center;
@@ -73,7 +70,7 @@
 .progressDot.active {
   border-color: var(--blue);
   background: var(--blue);
-  color: #fff;
+  color: #0F172A;
 }
 .progressDot.done {
   border-color: var(--green);
@@ -102,7 +99,6 @@
   background: var(--green);
 }
 
-/* ── Card ──────────────────────────────────────────────────── */
 .card {
   background: var(--navy-2);
   border: 1px solid rgba(255,255,255,0.08);
@@ -128,7 +124,6 @@
   margin-bottom: 28px;
 }
 
-/* ── Row / Field ───────────────────────────────────────────── */
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -157,7 +152,6 @@
 .req { color: var(--blue); margin-left: 2px; }
 .opt { color: rgba(255,255,255,0.3); font-weight: 400; text-transform: none; letter-spacing: 0; }
 
-/* ── Inputs ────────────────────────────────────────────────── */
 .input,
 .select,
 .textarea {
@@ -180,7 +174,7 @@
 .select:focus,
 .textarea:focus {
   border-color: var(--blue);
-  background: rgba(26,86,219,0.08);
+  background: rgba(255,206,27,0.08);
 }
 .select {
   appearance: none;
@@ -193,7 +187,6 @@
 .select option { background: #1E293B; color: #fff; }
 .textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
-/* Prefix input (price) */
 .prefixWrap {
   position: relative;
   display: flex;
@@ -220,7 +213,6 @@
   margin-top: -4px;
 }
 
-/* ── Chip selectors ────────────────────────────────────────── */
 .chipGroup {
   display: flex;
   flex-wrap: wrap;
@@ -243,7 +235,7 @@
 }
 .chipActive {
   border-color: var(--blue);
-  background: rgba(26,86,219,0.15);
+  background: rgba(255,206,27,0.15);
   color: #fff;
 }
 .srOnly {
@@ -254,7 +246,6 @@
   white-space: nowrap; border: 0;
 }
 
-/* ── Summary box (step 2) ──────────────────────────────────── */
 .summaryBox {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
@@ -287,7 +278,6 @@
   text-transform: capitalize;
 }
 
-/* ── Trust note (step 3) ───────────────────────────────────── */
 .trustNote {
   display: flex;
   align-items: center;
@@ -302,7 +292,6 @@
 }
 .trustNote svg { color: var(--green); flex-shrink: 0; }
 
-/* ── Photo upload (step 3) ─────────────────────────────────── */
 .dropzone {
   border: 2px dashed rgba(255,255,255,0.15);
   border-radius: var(--radius);
@@ -318,7 +307,7 @@
 }
 .dropzoneActive {
   border-color: var(--blue);
-  background: rgba(26,86,219,0.08);
+  background: rgba(255,206,27,0.08);
 }
 .dropzoneIcon {
   color: rgba(255,255,255,0.3);
@@ -413,7 +402,6 @@
   letter-spacing: 0.03em;
 }
 
-/* ── Errors ────────────────────────────────────────────────── */
 .error {
   font-size: 0.875rem;
   color: #f87171;
@@ -424,7 +412,6 @@
   margin-bottom: 20px;
 }
 
-/* ── Actions ───────────────────────────────────────────────── */
 .actions {
   display: flex;
   align-items: center;
@@ -450,7 +437,7 @@
   padding: 12px 28px;
   border-radius: var(--radius);
   background: var(--blue);
-  color: #fff;
+  color: #0F172A;
   font-size: 0.95rem;
   font-weight: 600;
   transition: background 0.15s, opacity 0.15s;
@@ -458,7 +445,6 @@
 .nextBtn:hover:not(:disabled) { background: var(--blue-dark); }
 .nextBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Trust bar ─────────────────────────────────────────────── */
 .trustBar {
   display: flex;
   justify-content: center;
@@ -484,8 +470,6 @@
   .heroSub { font-size: 0.92rem; }
   .container { padding: 0 16px; }
 
-  /* Progress stepper: labels overflow on phones, so drop them and
-     shrink the dots/lines instead of trying to wrap "Vehicle Details" etc. */
   .progress { padding: 24px 0 20px; }
   .progressLabel { display: none; }
   .progressDot { width: 26px; height: 26px; font-size: 0.72rem; }
