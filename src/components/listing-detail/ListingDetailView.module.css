@@ -235,3 +235,16 @@
   margin: 0;
   white-space: pre-wrap;
 }
+
+/* ============================================================
+   RESPONSIVE — added
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .root { padding: 1.25rem 1rem 3rem; }
+  .card { padding: 1.1rem; }
+  .title { font-size: 1.15rem; }
+  .price { font-size: 1.3rem; }
+  .thumbBtn { width: 68px; height: 52px; }
+  .specGrid { gap: 0.7rem; }
+}
