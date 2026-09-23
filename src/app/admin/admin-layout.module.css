@@ -4,7 +4,6 @@
   background: var(--navy);
 }
 
-/* ── Sidebar ── */
 .sidebar {
   width: 240px;
   flex-shrink: 0;
@@ -40,8 +39,8 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--blue);
-  background: rgba(26,86,219,0.15);
-  border: 1px solid rgba(26,86,219,0.35);
+  background: rgba(255,206,27,0.15);
+  border: 1px solid rgba(255,206,27,0.35);
   border-radius: 6px;
   padding: 0.15rem 0.4rem;
 }
@@ -71,7 +70,7 @@
 }
 
 .navLinkActive {
-  background: rgba(26,86,219,0.16);
+  background: rgba(255,206,27,0.16);
   color: #fff;
   position: relative;
 }
@@ -111,7 +110,6 @@
   cursor: default;
 }
 
-/* ── Main area ── */
 .main {
   flex: 1;
   min-width: 0;
