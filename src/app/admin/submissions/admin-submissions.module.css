@@ -35,7 +35,7 @@
   transition: all 0.15s;
 }
 .tab:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
-.tabActive { background: rgba(26,86,219,0.16); border-color: var(--blue); color: #fff; }
+.tabActive { background: rgba(255,206,27,0.16); border-color: var(--blue); color: #fff; }
 
 .tabCount {
   background: rgba(255,255,255,0.1);
@@ -58,7 +58,6 @@
 }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-/* ── Error / Empty ── */
 .errorBox {
   display: flex; align-items: center; gap: 0.5rem;
   background: rgba(220,38,38,0.1);
@@ -79,7 +78,6 @@
 }
 .emptyState p { margin: 0; font-size: 0.9rem; }
 
-/* ── Table ── */
 .tableWrap {
   background: var(--navy-2);
   border: 1px solid rgba(255,255,255,0.08);
@@ -118,7 +116,6 @@
 .muted { color: rgba(255,255,255,0.55); }
 .price { font-weight: 600; color: #fff; }
 
-/* ── Intent badge ── */
 .intentBadge {
   display: inline-block;
   font-size: 0.72rem;
@@ -129,10 +126,9 @@
   background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.7);
 }
-.intentBadge[data-intent="trade_in"] { background: rgba(26,86,219,0.15); color: #60A5FA; }
+.intentBadge[data-intent="trade_in"] { background: rgba(255,206,27,0.15); color: #FFE066; }
 .intentBadge[data-intent="either"]   { background: rgba(217,119,6,0.15); color: var(--amber); }
 
-/* ── Status badges (submissions enum) ── */
 .statusBadge {
   display: inline-block;
   font-size: 0.72rem;
@@ -142,19 +138,18 @@
   white-space: nowrap;
 }
 .statusBadge[data-status="pending"]     { background: rgba(217,119,6,0.15); color: var(--amber); }
-.statusBadge[data-status="valued"]      { background: rgba(26,86,219,0.15); color: #60A5FA; }
+.statusBadge[data-status="valued"]      { background: rgba(255,206,27,0.15); color: #FFE066; }
 .statusBadge[data-status="in_pipeline"] { background: rgba(124,58,237,0.15); color: #A78BFA; }
 .statusBadge[data-status="accepted"]    { background: rgba(5,150,105,0.15); color: #34D399; }
 .statusBadge[data-status="closed"]      { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
 .statusBadge[data-status="rejected"]    { background: rgba(220,38,38,0.15); color: #F87171; }
 
-/* ── Action buttons ── */
 .actionsCell { display: flex; align-items: center; gap: 0.5rem; }
 
 .primaryBtn {
-  background: rgba(26,86,219,0.15);
-  border: 1px solid rgba(26,86,219,0.35);
-  color: #60A5FA;
+  background: rgba(255,206,27,0.15);
+  border: 1px solid rgba(255,206,27,0.35);
+  color: #FFE066;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
@@ -206,7 +201,6 @@
 }
 .linkBtn:hover { color: #fff; }
 
-/* ── Expandable row detail ── */
 .detailRow td {
   background: rgba(0,0,0,0.15);
   padding: 1.25rem 1.5rem;
@@ -238,7 +232,6 @@
   border: 1px solid rgba(255,255,255,0.1);
 }
 
-/* ── Leads sub-panel ── */
 .leadsPanel {
   border-top: 1px solid rgba(255,255,255,0.08);
   padding-top: 1rem;
@@ -275,7 +268,6 @@
 .leadActionBadge[data-action="accepted"] { background: rgba(5,150,105,0.15); color: #34D399; }
 .leadActionBadge[data-action="passed"]   { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
 
-/* ── Modal ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -403,7 +395,7 @@
 .modalPrimaryBtn {
   background: var(--blue);
   border: none;
-  color: #fff;
+  color: #0F172A;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
