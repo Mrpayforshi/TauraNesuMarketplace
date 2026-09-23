@@ -612,3 +612,42 @@
   white-space: pre-wrap;
   margin-top: 14px;
 }
+
+/* ============================================================
+   RESPONSIVE — added
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .rightCol { position: static; }
+}
+
+@media (max-width: 640px) {
+  .container { padding: 18px 16px; }
+  .breadcrumb { margin-bottom: 16px; font-size: 0.78rem; flex-wrap: wrap; }
+
+  .layout { gap: 18px; }
+
+  .mainImgWrap { height: 260px; border-radius: 10px; }
+  .galleryLogo { font-size: 0.75rem; }
+  .galleryPriceValue { font-size: 1.05rem; }
+  .galleryArrow { width: 30px; height: 30px; }
+
+  .thumbRow { gap: 6px; }
+  .thumbWrap { height: 60px; border-radius: 8px; }
+
+  .quickSpecRow { gap: 10px 14px; padding: 10px 12px; }
+  .quickSpecItem { font-size: 0.78rem; }
+
+  .specsCard, .featuresCard, .descCard, .tradeInCard { padding: 16px; }
+  .specsGrid { gap: 0; }
+  .specRow { padding: 10px 0; }
+  .featuresGrid { grid-template-columns: 1fr; gap: 8px; }
+
+  .priceCard { padding: 18px; }
+  .listingTitle { font-size: 1.1rem; }
+  .price { font-size: 1.6rem; }
+
+  .related { margin-top: 36px; padding-top: 28px; }
+  .relatedGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .relatedImgWrap { height: 100px; }
+}
