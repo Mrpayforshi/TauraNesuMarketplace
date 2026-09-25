@@ -25,10 +25,21 @@
   letter-spacing: -0.02em;
 }
 
+/* Wrapper for links + search + actions. Flex on all sizes by default;
+   the mobile media query below turns it into a collapsible column. */
+.menuPanel {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  min-width: 0;
+}
+
 .links {
   display: flex;
   gap: 4px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .navLink {
@@ -57,6 +68,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .searchIcon {
@@ -133,6 +145,13 @@
   border-radius: 6px;
 }
 .menuToggle:hover { background: rgba(255,255,255,0.08); }
+
+@media (max-width: 900px) {
+  /* Between 768px and 900px things get cramped before the hamburger
+     takes over — shrink gaps instead of waiting for the hard break. */
+  .menuPanel { gap: 12px; }
+  .searchForm { max-width: 220px; }
+}
 
 @media (max-width: 768px) {
   .inner {
