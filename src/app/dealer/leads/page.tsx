@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import DealerNav from '@/components/DealerNav';
 import styles from './leads.module.css';
 import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
