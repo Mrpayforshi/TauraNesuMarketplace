@@ -177,6 +177,7 @@ export default function DealerLeadsPage() {
   return (
     <>
       <Navbar />
+      <DealerNav />
       <main className={styles.root}>
 
         <div className={styles.header}>
