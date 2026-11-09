@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import DealerNav from '@/components/DealerNav';
 import styles from './dashboard.module.css';
 import { authFetch, clearAccessToken } from '@/lib/client-auth';
 
 interface Listing {
   id: string;
+  slug: string | null;
   make: string;
   model: string;
   year: number;
   price_usd: number;
+  mileage_km: number | null;
+  body_type: string | null;
+  transmission: string | null;
+  fuel_type: string | null;
+  colour: string | null;
+  condition: string | null;
   status: string;
-  view_count: number;
   created_at: string;
   primary_image_url: string | null;
 }
@@ -30,6 +37,14 @@ interface Analytics {
   };
 }
 
+interface GalleryImage {
+  id: string;
+  image_url: string;
+  display_order: number;
+}
+
+type FilterKey = 'all' | 'active' | 'pending_review' | 'sold' | 'rejected';
+
 function formatPrice(n: number) {
   return '$' + n.toLocaleString('en-US');
 }
@@ -37,28 +52,65 @@ function formatPrice(n: number) {
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'Today';
+  if (days <= 0) return 'Today';
   if (days === 1) return 'Yesterday';
   if (days < 30) return `${days}d ago`;
   const months = Math.floor(days / 30);
   return `${months}mo ago`;
 }
 
+function titleCase(value: string | null) {
+  if (!value) return '—';
+  return value
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 const STATUS_LABEL: Record<string, string> = {
-  active: 'Active',
+  active: 'Live',
   pending: 'Pending',
-  pending_review: 'Pending Review',
+  pending_review: 'In review',
   sold: 'Sold',
+  rejected: 'Rejected',
+  draft: 'Draft',
   archived: 'Archived',
 };
 
+function badgeClass(status: string) {
+  switch (status) {
+    case 'active':
+      return styles.badgeLive;
+    case 'pending':
+    case 'pending_review':
+      return styles.badgeReview;
+    case 'sold':
+      return styles.badgeSold;
+    case 'rejected':
+      return styles.badgeRejected;
+    default:
+      return styles.badgeOther;
+  }
+}
+
 export default function DealerDashboard() {
   const router = useRouter();
+  const detailRef = useRef<HTMLElement | null>(null);
+
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [period, setPeriod] = useState<30 | 60 | 90>(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // listing id -> ordered list of photo urls (loaded on demand)
+  const [galleries, setGalleries] = useState<Record<string, string[]>>({});
+  const [galleryLoadingId, setGalleryLoadingId] = useState<string | null>(null);
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -78,6 +130,79 @@ export default function DealerDashboard() {
       .finally(() => setLoading(false));
   }, [period, router]);
 
+  const listings = useMemo(() => analytics?.listings ?? [], [analytics]);
+
+  const counts = useMemo(() => {
+    const c: Record<FilterKey, number> = { all: listings.length, active: 0, pending_review: 0, sold: 0, rejected: 0 };
+    for (const l of listings) {
+      if (l.status === 'active') c.active++;
+      else if (l.status === 'pending_review' || l.status === 'pending') c.pending_review++;
+      else if (l.status === 'sold') c.sold++;
+      else if (l.status === 'rejected') c.rejected++;
+    }
+    return c;
+  }, [listings]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return listings.filter((l) => {
+      if (filter === 'active' && l.status !== 'active') return false;
+      if (filter === 'pending_review' && l.status !== 'pending_review' && l.status !== 'pending') return false;
+      if (filter === 'sold' && l.status !== 'sold') return false;
+      if (filter === 'rejected' && l.status !== 'rejected') return false;
+      if (!q) return true;
+      return `${l.year} ${l.make} ${l.model} ${l.colour ?? ''}`.toLowerCase().includes(q);
+    });
+  }, [listings, filter, query]);
+
+  // The selected car; falls back to the first visible car so the panel is never empty
+  const selected = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
+  const selectedKey = selected?.id ?? null;
+
+  // Load all photos for the selected car (the list only carries the primary photo)
+  useEffect(() => {
+    if (!selectedKey) return;
+    setPhotoIndex(0);
+    if (galleries[selectedKey]) return;
+    let active = true;
+    const primary = listings.find((l) => l.id === selectedKey)?.primary_image_url ?? null;
+    setGalleryLoadingId(selectedKey);
+    authFetch(`/api/dealer/listings/${selectedKey}`)
+      .then(async (res) => {
+        if (res.status === 401) {
+          clearAccessToken();
+          router.push('/login');
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load photos');
+        const imgs: GalleryImage[] = (data.listing?.listing_images ?? [])
+          .slice()
+          .sort((a: GalleryImage, b: GalleryImage) => a.display_order - b.display_order);
+        const urls = imgs.map((i) => i.image_url);
+        const ordered = primary ? [primary, ...urls.filter((u) => u !== primary)] : urls;
+        if (active) setGalleries((prev) => ({ ...prev, [selectedKey]: ordered }));
+      })
+      .catch(() => {
+        // Fall back to the primary photo only
+        if (active) setGalleries((prev) => ({ ...prev, [selectedKey]: primary ? [primary] : [] }));
+      })
+      .finally(() => {
+        if (active) setGalleryLoadingId((cur) => (cur === selectedKey ? null : cur));
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey]);
+
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) {
+      detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Archive this listing? It will no longer be visible to buyers.')) return;
     setDeletingId(id);
@@ -91,6 +216,7 @@ export default function DealerDashboard() {
       if (analyticsRes.status === 401) { clearAccessToken(); router.push('/login'); return; }
       const updated = await analyticsRes.json();
       setAnalytics(updated);
+      setSelectedId(null);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
@@ -98,254 +224,259 @@ export default function DealerDashboard() {
     }
   }
 
-  const totalListings = analytics?.listings.length ?? 0;
-  const soldCount = analytics?.listings.filter(l => l.status === 'sold').length ?? 0;
-  const acceptanceRate = analytics && (analytics.pipeline.accepted + analytics.pipeline.passed) > 0
-    ? Math.round((analytics.pipeline.accepted / (analytics.pipeline.accepted + analytics.pipeline.passed)) * 100)
-    : null;
+  const chips: { key: FilterKey; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: counts.all },
+    { key: 'active', label: 'Live', count: counts.active },
+    { key: 'pending_review', label: 'In review', count: counts.pending_review },
+    { key: 'sold', label: 'Sold', count: counts.sold },
+  ];
+  if (counts.rejected > 0) chips.push({ key: 'rejected', label: 'Rejected', count: counts.rejected });
+
+  const photos = selected ? galleries[selected.id] ?? (selected.primary_image_url ? [selected.primary_image_url] : []) : [];
+  const currentPhoto = photos[Math.min(photoIndex, Math.max(photos.length - 1, 0))] ?? null;
+  const photosLoading = selected ? galleryLoadingId === selected.id : false;
 
   return (
     <>
       <Navbar />
+      <DealerNav />
       <main className={styles.root}>
-
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.headerInner}>
-            <div>
-              <h1 className={styles.heading}>Dealer Dashboard</h1>
-              <p className={styles.sub}>Manage your listings and track performance</p>
-            </div>
-            <div className={styles.headerActions}>
-              <Link href="/dealer/leads" className={styles.leadsBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                View Leads
-              </Link>
-              <Link href="/dealer/listings/new" className={styles.newBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                New Listing
-              </Link>
-            </div>
-          </div>
-        </div>
-
         <div className={styles.body}>
 
-          {/* Period selector */}
-          <div className={styles.periodRow}>
-            <span className={styles.periodLabel}>Period:</span>
-            {([30, 60, 90] as const).map(d => (
-              <button
-                key={d}
-                className={`${styles.periodBtn} ${period === d ? styles.periodActive : ''}`}
-                onClick={() => setPeriod(d)}
-              >
-                {d}d
-              </button>
-            ))}
+          {/* Header */}
+          <div className={styles.header}>
+            <div>
+              <h1 className={styles.heading}>Inventory</h1>
+              <p className={styles.sub}>
+                {loading ? 'Loading your stock…' : `${counts.all} ${counts.all === 1 ? 'vehicle' : 'vehicles'} listed`}
+              </p>
+            </div>
+            <Link href="/dealer/listings/new" className={styles.newBtn}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New listing
+            </Link>
           </div>
 
-          {/* Stats */}
+          {/* Summary strip */}
+          {analytics && !loading && (
+            <div className={styles.strip}>
+              <div className={styles.stripItem}>
+                <span className={styles.stripValue}>{analytics.active_listings}</span>
+                <span className={styles.stripLabel}>Live</span>
+              </div>
+              <div className={styles.stripItem}>
+                <span className={styles.stripValue}>{counts.pending_review}</span>
+                <span className={styles.stripLabel}>In review</span>
+              </div>
+              <Link href="/dealer/leads" className={`${styles.stripItem} ${styles.stripLink}`}>
+                <span className={styles.stripValue}>{analytics.leads_received}</span>
+                <span className={styles.stripLabel}>Leads ({period}d) →</span>
+              </Link>
+              <div className={styles.periodRow} role="group" aria-label="Leads period">
+                {([30, 60, 90] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`${styles.periodBtn} ${period === d ? styles.periodActive : ''}`}
+                    onClick={() => setPeriod(d)}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {loading ? (
-            <div className={styles.loadingGrid}>
-              {[1,2,3,4].map(i => <div key={i} className={styles.skeletonCard} />)}
+            <div className={styles.split}>
+              <div className={styles.listCol}>
+                {[1, 2, 3, 4, 5].map((i) => <div key={i} className={styles.skeletonRow} />)}
+              </div>
+              <div className={styles.skeletonDetail} />
             </div>
           ) : error ? (
             <div className={styles.errorBox}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
               {error}
             </div>
-          ) : analytics ? (
-            <>
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon} data-color="blue">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                    </svg>
-                  </div>
-                  <div className={styles.statValue}>{analytics.active_listings}</div>
-                  <div className={styles.statLabel}>Active Listings</div>
+          ) : listings.length === 0 ? (
+            <div className={styles.emptyState}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+              </svg>
+              <p>No listings yet — add your first car to get started.</p>
+              <Link href="/dealer/listings/new" className={styles.newBtn}>Create listing</Link>
+            </div>
+          ) : (
+            <div className={styles.split}>
+
+              {/* ── Left: searchable list ── */}
+              <section className={styles.listCol} aria-label="Your vehicles">
+                <label className={styles.search}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <span className={styles.srOnly}>Search your vehicles</span>
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search make, model or colour"
+                    className={styles.searchInput}
+                  />
+                </label>
+
+                <div className={styles.chips}>
+                  {chips.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className={`${styles.chip} ${filter === c.key ? styles.chipActive : ''}`}
+                      onClick={() => setFilter(c.key)}
+                    >
+                      {c.label} {c.count}
+                    </button>
+                  ))}
                 </div>
 
-                <Link href="/dealer/leads" className={`${styles.statCard} ${styles.statCardLink}`}>
-                  <div className={styles.statIcon} data-color="green">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  </div>
-                  <div className={styles.statValue}>{analytics.leads_received}</div>
-                  <div className={styles.statLabel}>Leads ({period}d)</div>
-                  <span className={styles.statCardCta}>View leads →</span>
-                </Link>
-
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon} data-color="orange">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                  </div>
-                  <div className={styles.statValue}>{totalListings}</div>
-                  <div className={styles.statLabel}>Total Listings</div>
-                </div>
-
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon} data-color="purple">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                      <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                  </div>
-                  <div className={styles.statValue}>
-                    {acceptanceRate !== null ? `${acceptanceRate}%` : soldCount}
-                  </div>
-                  <div className={styles.statLabel}>
-                    {acceptanceRate !== null ? 'Lead Acceptance' : 'Sold'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Listings table */}
-              <div className={styles.tableSection}>
-                <div className={styles.tableTitleRow}>
-                  <h2 className={styles.tableTitle}>Your Listings</h2>
-                  <Link href="/dealer/listings/new" className={styles.tableNewBtn}>+ Add new</Link>
-                </div>
-
-                {analytics.listings.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                    </svg>
-                    <p>No listings yet — add your first car to get started.</p>
-                    <Link href="/dealer/listings/new" className={styles.newBtn}>Create Listing</Link>
-                  </div>
+                {filtered.length === 0 ? (
+                  <p className={styles.noMatch}>No vehicles match this filter.</p>
                 ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th aria-label="Photo" />
-                          <th>Vehicle</th>
-                          <th>Price</th>
-                          <th>Status</th>
-                          <th>Added</th>
-                          <th>Views</th>
-                          <th aria-label="Actions" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analytics.listings.map(listing => (
-                          <tr key={listing.id}>
-                            <td style={{ width: 56 }}>
-                              {listing.primary_image_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={listing.primary_image_url}
-                                  alt=""
-                                  style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, display: 'block' }}
-                                />
-                              ) : (
-                                <div
-                                  style={{
-                                    width: 48,
-                                    height: 36,
-                                    borderRadius: 6,
-                                    background: '#1e293b',
-                                  }}
-                                />
-                              )}
-                            </td>
-                            <td className={styles.vehicleCell}>
-                              <span className={styles.vehicleName}>
-                                {listing.year} {listing.make} {listing.model}
+                  <ul className={styles.rows}>
+                    {filtered.map((l) => {
+                      const isSel = selected?.id === l.id;
+                      return (
+                        <li key={l.id}>
+                          <button
+                            type="button"
+                            className={`${styles.row} ${isSel ? styles.rowActive : ''}`}
+                            onClick={() => handleSelect(l.id)}
+                            aria-pressed={isSel}
+                          >
+                            {l.primary_image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={l.primary_image_url} alt="" className={styles.thumb} />
+                            ) : (
+                              <span className={`${styles.thumb} ${styles.thumbEmpty}`} aria-hidden="true">No photo</span>
+                            )}
+                            <span className={styles.rowText}>
+                              <span className={styles.rowTitle}>{l.year} {l.make} {l.model}</span>
+                              <span className={styles.rowMeta}>
+                                {l.mileage_km !== null ? `${l.mileage_km.toLocaleString('en-US')} km` : '—'}
+                                {' · '}{titleCase(l.transmission)} · {timeAgo(l.created_at)}
                               </span>
-                            </td>
-                            <td className={styles.priceCell}>{formatPrice(listing.price_usd)}</td>
-                            <td>
-                              <span className={`${styles.badge} ${styles[`badge_${listing.status}`]}`}>
-                                {STATUS_LABEL[listing.status] ?? listing.status}
+                            </span>
+                            <span className={styles.rowRight}>
+                              <span className={styles.rowPrice}>{formatPrice(l.price_usd)}</span>
+                              <span className={`${styles.badge} ${badgeClass(l.status)}`}>
+                                {STATUS_LABEL[l.status] ?? titleCase(l.status)}
                               </span>
-                            </td>
-                            <td className={styles.dateCell}>{timeAgo(listing.created_at)}</td>
-                            <td className={styles.viewsCell}>{listing.view_count}</td>
-                            <td className={styles.actionsCell}>
-                              <Link
-                                href={`/dealer/listings/${listing.id}`}
-                                className={styles.actionBtn}
-                                title="View"
-                              >
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                  <circle cx="12" cy="12" r="3" />
-                                </svg>
-                              </Link>
-                              <Link
-                                href={`/dealer/listings/${listing.id}/edit`}
-                                className={styles.actionBtn}
-                                title="Edit"
-                              >
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                              </Link>
-                              <button
-                                className={`${styles.actionBtn} ${styles.actionDelete}`}
-                                onClick={() => handleDelete(listing.id)}
-                                disabled={deletingId === listing.id}
-                                title="Archive"
-                              >
-                                {deletingId === listing.id ? (
-                                  <span className={styles.miniSpinner} />
-                                ) : (
-                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                    <path d="M10 11v6"/><path d="M14 11v6"/>
-                                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                                  </svg>
-                                )}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
-              </div>
+              </section>
 
-              {/* Pipeline summary */}
-              {(analytics.pipeline.accepted + analytics.pipeline.passed) > 0 && (
-                <div className={styles.pipelineSection}>
-                  <h2 className={styles.tableTitle}>Lead Pipeline</h2>
-                  <div className={styles.pipelineGrid}>
-                    <div className={styles.pipelineCard}>
-                      <div className={styles.pipelineNum} data-color="green">{analytics.pipeline.accepted}</div>
-                      <div className={styles.pipelineLabel}>Accepted</div>
+              {/* ── Right: the selected car ── */}
+              <section className={styles.detail} ref={detailRef} aria-label="Selected vehicle">
+                {selected ? (
+                  <>
+                    <div className={styles.hero}>
+                      {currentPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={currentPhoto} alt={`${selected.year} ${selected.make} ${selected.model}`} className={styles.heroImg} />
+                      ) : (
+                        <div className={styles.heroEmpty}>
+                          <span>{photosLoading ? 'Loading photos…' : 'No photos yet'}</span>
+                          {!photosLoading && (
+                            <Link href={`/dealer/listings/${selected.id}/edit`} className={styles.heroEmptyLink}>
+                              Add photos
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                      <span className={`${styles.heroBadge} ${styles.badge} ${badgeClass(selected.status)}`}>
+                        {STATUS_LABEL[selected.status] ?? titleCase(selected.status)}
+                      </span>
+                      {photos.length > 1 && (
+                        <span className={styles.heroCount}>
+                          {Math.min(photoIndex, photos.length - 1) + 1} of {photos.length}
+                        </span>
+                      )}
                     </div>
-                    <div className={styles.pipelineCard}>
-                      <div className={styles.pipelineNum} data-color="red">{analytics.pipeline.passed}</div>
-                      <div className={styles.pipelineLabel}>Passed</div>
-                    </div>
-                    <div className={styles.pipelineCard}>
-                      <div className={styles.pipelineNum} data-color="blue">
-                        {analytics.pipeline.accepted + analytics.pipeline.passed}
+
+                    {photos.length > 1 && (
+                      <div className={styles.thumbStrip}>
+                        {photos.map((url, i) => (
+                          <button
+                            key={url}
+                            type="button"
+                            className={`${styles.stripThumb} ${i === photoIndex ? styles.stripThumbActive : ''}`}
+                            onClick={() => setPhotoIndex(i)}
+                            aria-label={`Show photo ${i + 1}`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt="" />
+                          </button>
+                        ))}
                       </div>
-                      <div className={styles.pipelineLabel}>Total</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : null}
+                    )}
 
+                    <div className={styles.detailHead}>
+                      <div>
+                        <h2 className={styles.detailTitle}>{selected.year} {selected.make} {selected.model}</h2>
+                        <p className={styles.detailSub}>Listed {timeAgo(selected.created_at).toLowerCase()}</p>
+                      </div>
+                      <div className={styles.detailPrice}>{formatPrice(selected.price_usd)}</div>
+                    </div>
+
+                    <dl className={styles.specs}>
+                      <div className={styles.spec}><dt>Year</dt><dd>{selected.year}</dd></div>
+                      <div className={styles.spec}>
+                        <dt>Mileage</dt>
+                        <dd>{selected.mileage_km !== null ? `${selected.mileage_km.toLocaleString('en-US')} km` : '—'}</dd>
+                      </div>
+                      <div className={styles.spec}><dt>Transmission</dt><dd>{titleCase(selected.transmission)}</dd></div>
+                      <div className={styles.spec}><dt>Fuel</dt><dd>{titleCase(selected.fuel_type)}</dd></div>
+                      <div className={styles.spec}><dt>Body</dt><dd>{titleCase(selected.body_type)}</dd></div>
+                      <div className={styles.spec}><dt>Colour</dt><dd>{titleCase(selected.colour)}</dd></div>
+                    </dl>
+
+                    <div className={styles.actions}>
+                      {selected.status === 'active' && selected.slug && (
+                        <Link href={`/listings/${selected.slug}`} target="_blank" className={styles.primaryBtn}>
+                          View as buyer
+                        </Link>
+                      )}
+                      <Link href={`/dealer/listings/${selected.id}`} className={styles.ghostBtn}>
+                        Full details
+                      </Link>
+                      <Link href={`/dealer/listings/${selected.id}/edit`} className={styles.ghostBtn}>
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        className={styles.dangerBtn}
+                        onClick={() => handleDelete(selected.id)}
+                        disabled={deletingId === selected.id}
+                      >
+                        {deletingId === selected.id ? 'Archiving…' : 'Archive'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className={styles.noMatch}>Select a vehicle to see its photos and details.</p>
+                )}
+              </section>
+            </div>
+          )}
         </div>
       </main>
     </>
