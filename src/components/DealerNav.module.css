@@ -1,0 +1,39 @@
+/* Dealer portal tab bar — sits directly under the site Navbar */
+
+.bar {
+  background: var(--navy-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.tab {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 14px 18px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: #fff;
+}
+
+.tabActive {
+  color: #fff;
+  border-bottom-color: var(--blue);
+}
