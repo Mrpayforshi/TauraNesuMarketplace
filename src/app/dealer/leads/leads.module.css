@@ -7,7 +7,6 @@
 .root {
   min-height: 100vh;
   background: var(--navy);
-  padding-top: 72px; /* Navbar height */
 }
 
 /* ── Header ── */
