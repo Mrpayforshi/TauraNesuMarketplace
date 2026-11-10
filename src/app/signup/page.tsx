@@ -4,10 +4,15 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import { setAccessToken } from '@/lib/client-auth';
 import styles from './signup.module.css';
+import extras from '../auth-extras.module.css';
 
 export default function SignupPage() {
   const router = useRouter();
+  // True when Supabase email confirmation is on: the account exists but there
+  // is no session yet, so we show "check your email" instead of redirecting.
+  const [confirmEmail, setConfirmEmail] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,8 +56,16 @@ export default function SignupPage() {
         return;
       }
 
-      router.push('/listings');
-      router.refresh();
+      // The API returns a session only when the account is usable right
+      // away. Store it so authFetch() works — without this the person looked
+      // signed up but every protected request failed.
+      if (data.session) {
+        setAccessToken(data.session);
+        router.push('/listings');
+        router.refresh();
+      } else {
+        setConfirmEmail(true);
+      }
     } catch {
       setError('Network error — please check your connection.');
     } finally {
@@ -66,6 +79,33 @@ export default function SignupPage() {
     : 3;
   const strengthLabel = ['', 'Weak', 'Fair', 'Strong'][strength];
   const strengthClass = [styles.strengthNone, styles.strengthWeak, styles.strengthFair, styles.strengthStrong][strength];
+
+  if (confirmEmail) {
+    return (
+      <>
+        <Navbar />
+        <main className={styles.root}>
+          <div className={styles.container}>
+            <div className={`${styles.formSide} ${extras.fullWidth}`}>
+              <div className={`${styles.card} ${extras.stack}`}>
+                <h1 className={styles.title}>Check your email</h1>
+                <div className={extras.successBox}>
+                  We sent a confirmation link to {email.trim().toLowerCase()}. Open it to
+                  activate your account, then sign in.
+                </div>
+                <p className={extras.note}>
+                  Can&apos;t find it? Check your spam folder.
+                </p>
+                <Link href="/login" className={styles.submitBtn} style={{ textDecoration: 'none' }}>
+                  Go to sign in
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -224,9 +264,9 @@ export default function SignupPage() {
 
                 <p className={styles.terms}>
                   By creating an account you agree to our{' '}
-                  <a href="#" className={styles.termsLink}>Terms of Service</a>
+                  <Link href="/terms" className={styles.termsLink} target="_blank">Terms of Service</Link>
                   {' '}and{' '}
-                  <a href="#" className={styles.termsLink}>Privacy Policy</a>.
+                  <Link href="/privacy" className={styles.termsLink} target="_blank">Privacy Policy</Link>.
                 </p>
 
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
