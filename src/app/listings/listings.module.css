@@ -95,10 +95,7 @@
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { position: static !important; }
-}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static !important; max-height: none; overflow: visible; } }
 
 .sidebar {
   position: sticky;
