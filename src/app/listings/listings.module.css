@@ -97,10 +97,7 @@
 
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static !important; max-height: none; overflow: visible; } }
 
-.sidebar {
-  position: sticky;
-  top: 80px;
-}
+/* The filter is a pinned panel with its own scroll lane. */ .sidebar { position: sticky; top: 80px; max-height: calc(100vh - 100px); max-height: calc(100dvh - 100px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; scrollbar-gutter: stable; } .sidebar::-webkit-scrollbar { width: 6px; } .sidebar::-webkit-scrollbar-track { background: transparent; } .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 999px; } .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
 
 .sidebarCard {
   background: var(--navy-2);
