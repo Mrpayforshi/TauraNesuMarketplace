@@ -6,9 +6,13 @@ import { useState, Suspense, ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { setAccessToken } from '@/lib/client-auth';
+import { setAccessToken, clearAccessToken } from '@/lib/client-auth';
 import { normalizeZimPhone } from '@/lib/phone-auth';
 import styles from './login.module.css';
+
+// Set NEXT_PUBLIC_CONTACT_EMAIL in Vercel (Settings → Environment Variables).
+// If it isn't set, the dealer page shows plain text instead of a broken link.
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
 function LoginForm() {
   const router = useRouter();
@@ -79,6 +83,9 @@ function LoginForm() {
         if (data.isDealer) {
           router.push('/dealer/dashboard');
         } else {
+          // Don't leave a buyer session behind after telling them the
+          // dealer sign-in failed.
+          clearAccessToken();
           setError(
             "This account isn't registered as a dealer. Sign in with your dealer account, or contact us to set one up."
           );
@@ -137,9 +144,13 @@ function LoginForm() {
               {isDealerPortal ? (
                 <p className={styles.sub}>
                   Dealer accounts are created by TauraNesu —{' '}
-                  <a href="mailto:REPLACE_ME@tauranesu.example" className={styles.link}>
-                    contact us to get set up
-                  </a>.
+                  {CONTACT_EMAIL ? (
+                    <a href={`mailto:${CONTACT_EMAIL}`} className={styles.link}>
+                      contact us to get set up
+                    </a>
+                  ) : (
+                    'contact us to get set up'
+                  )}.
                 </p>
               ) : (
                 <p className={styles.sub}>
@@ -169,7 +180,7 @@ function LoginForm() {
                 <div className={styles.field}>
                   <div className={styles.labelRow}>
                     <label className={styles.label} htmlFor="password">Password</label>
-                    <a href="#" className={styles.forgotLink} tabIndex={-1}>Forgot password?</a>
+                    <Link href="/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
                   </div>
                   <div className={styles.passwordWrap}>
                     <input
