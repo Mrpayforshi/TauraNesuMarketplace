@@ -1,9 +1,94 @@
-import Link from 'next/link';
-import { createServerClient } from '@/lib/supabase';
+   import Link from 'next/link';
+import { createServerClient, createAdminClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import {
+  IconKey,
+  IconBanknote,
+  IconStorefront,
+  IconShieldCheck,
+  IconCar,
+  IconCircleCheck,
+  IconArrowRight,
+} from '@/components/icons';
 import styles from './home.module.css';
 
 export const dynamic = 'force-dynamic';
+
+const PRICE_STEPS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+const PATHS = [
+  {
+    key: 'buy',
+    index: '01',
+    title: 'Buy a car',
+    desc: 'Compare stock from verified dealers and get in touch with them directly.',
+    cta: 'Browse cars',
+    href: '/listings',
+    Icon: IconKey,
+    primary: false,
+  },
+  {
+    key: 'sell',
+    index: '02',
+    title: 'Sell your car',
+    desc: 'Submit your car once. Verified dealers review it and come to you with offers.',
+    cta: 'Sell my car',
+    href: '/sell',
+    Icon: IconBanknote,
+    primary: true,
+  },
+  {
+    key: 'dealer',
+    index: '03',
+    title: 'List as a dealer',
+    desc: 'List your stock for free and receive vetted seller leads.',
+    cta: 'Open dealer portal',
+    href: '/login?portal=dealer',
+    Icon: IconStorefront,
+    primary: false,
+  },
+];
+
+/**
+ * Real marketplace numbers for the stats bar.
+ *
+ * - Active listings: counted with the public client (the "Public read active
+ *   listings" RLS policy already allows it).
+ * - Verified dealers: the dealers table has no public read policy (it holds
+ *   phone numbers and emails), so a head-only count is taken with the admin
+ *   client. This runs on the server only and returns a bare number — no dealer
+ *   rows ever reach the browser.
+ */
+async function getSiteStats() {
+  try {
+    const publicClient = createServerClient();
+    const adminClient = createAdminClient();
+
+    const [listingsRes, dealersRes] = await Promise.all([
+      publicClient
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active'),
+      adminClient
+        .from('dealers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active'),
+    ]);
+
+    if (listingsRes.error) console.error('getSiteStats listings error:', listingsRes.error.message);
+    if (dealersRes.error) console.error('getSiteStats dealers error:', dealersRes.error.message);
+
+    return {
+      listings: listingsRes.count ?? 0,
+      dealers: dealersRes.count ?? 0,
+    };
+  } catch (err) {
+    console.error('getSiteStats failed:', err);
+    return { listings: 0, dealers: 0 };
+  }
+}
+
+const formatCount = (n: number) => n.toLocaleString('en-US');
 
 async function getLatestListings() {
   const supabase = createServerClient();
@@ -20,7 +105,7 @@ async function getLatestListings() {
 }
 
 export default async function HomePage() {
-  const listings = await getLatestListings();
+  const [listings, stats] = await Promise.all([getLatestListings(), getSiteStats()]);
 
   return (
     <>
@@ -94,89 +179,62 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── I WANT TO ── */}
-        <section className={styles.intentSection}>
+        {/* ── CHOOSE YOUR PATH ── */}
+        <section className={styles.paths} aria-labelledby="paths-heading">
           <div className={styles.container}>
-            <p className={styles.intentLabel}>I want to...</p>
-            <div className={styles.intentGrid}>
-              <div className={styles.intentCard}>
-                <div className={styles.intentIcon} style={{background:'rgba(255,206,27,0.15)'}}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFCE1B" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <h3 className={styles.intentTitle}>I&apos;m a Buyer</h3>
-                <p className={styles.intentDesc}>Find the perfect car from trusted dealers.</p>
-                <Link href="/listings" className={styles.intentBtnBlue}>Browse Cars →</Link>
-              </div>
-
-              <div className={`${styles.intentCard} ${styles.intentCardFeatured}`}>
-                <div className={styles.intentIcon} style={{background:'rgba(236,72,153,0.2)'}}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                    <line x1="7" y1="7" x2="7.01" y2="7" />
-                  </svg>
-                </div>
-                <h3 className={styles.intentTitle}>I&apos;m a Seller</h3>
-                <p className={styles.intentDesc}>Sell your car quickly and get the best offers.</p>
-                <Link href="/sell" className={styles.intentBtnPink}>Sell Your Car →</Link>
-              </div>
-
-              <div className={styles.intentCard}>
-                <div className={styles.intentIcon} style={{background:'rgba(5,150,105,0.15)'}}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                </div>
-                <h3 className={styles.intentTitle}>I&apos;m a Dealer</h3>
-                <p className={styles.intentDesc}>Grow your business and reach more buyers.</p>
-                <Link href="/login?portal=dealer" className={styles.intentBtnTeal}>Dealer Portal →</Link>
-              </div>
+            <div className={styles.pathsHead}>
+              <h2 id="paths-heading" className={styles.pathsTitle}>One marketplace. Three ways in.</h2>
             </div>
-            <p className={styles.intentFootnote}>Your experience will be tailored to your choice.</p>
+            <div className={styles.pathsGrid}>
+              {PATHS.map(({ key, index, title, desc, cta, href, Icon, primary }) => (
+                <Link
+                  key={key}
+                  href={href}
+                  className={`${styles.path} ${primary ? styles.pathPrimary : ''}`}
+                >
+                  <span className={styles.pathIndex} aria-hidden="true">{index}</span>
+                  <Icon size={28} className={styles.pathIcon} />
+                  <h3 className={styles.pathName}>{title}</h3>
+                  <p className={styles.pathDesc}>{desc}</p>
+                  <span className={styles.pathCta}>
+                    {cta}
+                    <IconArrowRight size={16} className={styles.pathArrow} />
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ── STATS BAR ── */}
+        {/* ── LIVE STATS (real counts; items with a zero count are hidden) ── */}
         <div className={styles.statsBar}>
-          <div className={styles.statItem}>
-            <span className={styles.statIcon} style={{background:'rgba(255,206,27,0.15)'}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFCE1B" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </span>
-            <div>
-              <strong className={styles.statNum}>250+</strong>
-              <span className={styles.statLabel}>Verified Dealers</span>
+          {stats.dealers > 0 && (
+            <div className={styles.statItem}>
+              <IconShieldCheck size={22} className={styles.statIcon} />
+              <div>
+                <strong className={styles.statNum}>{formatCount(stats.dealers)}</strong>
+                <span className={styles.statLabel}>
+                  Verified {stats.dealers === 1 ? 'dealer' : 'dealers'}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className={styles.statDivider} />
-          <div className={styles.statItem}>
-            <span className={styles.statIcon} style={{background:'rgba(236,72,153,0.15)'}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2">
-                <rect x="1" y="3" width="15" height="13" rx="2" />
-                <path d="M16 8h4l3 3v5h-7V8z" />
-                <circle cx="5.5" cy="18.5" r="2.5" />
-                <circle cx="18.5" cy="18.5" r="2.5" />
-              </svg>
-            </span>
-            <div>
-              <strong className={styles.statNum}>12,500+</strong>
-              <span className={styles.statLabel}>Active Listings</span>
+          )}
+          {stats.listings > 0 && (
+            <div className={styles.statItem}>
+              <IconCar size={22} className={styles.statIcon} />
+              <div>
+                <strong className={styles.statNum}>{formatCount(stats.listings)}</strong>
+                <span className={styles.statLabel}>
+                  Active {stats.listings === 1 ? 'listing' : 'listings'}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className={styles.statDivider} />
+          )}
           <div className={styles.statItem}>
-            <span className={styles.statIcon} style={{background:'rgba(5,150,105,0.15)'}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
-              </svg>
-            </span>
+            <IconCircleCheck size={22} className={styles.statIcon} />
             <div>
-              <strong className={`${styles.statNum} ${styles.statNumGreen}`}>100% Free</strong>
-              <span className={styles.statLabel}>No registration required to browse</span>
+              <strong className={styles.statNum}>Free</strong>
+              <span className={styles.statLabel}>Browse without an account</span>
             </div>
           </div>
         </div>
@@ -210,7 +268,7 @@ export default async function HomePage() {
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionHeadingLight}>LATEST LISTINGS</h2>
-              <Link href="/listings" className={styles.viewAll}>View all listings →</Link>
+              <Link href="/listings" className={styles.viewAll}>View all listings <IconArrowRight size={14} className={styles.viewAllArrow} /></Link>
             </div>
             <div className={styles.listingsGrid}>
               {listings.length === 0 ? (
@@ -295,7 +353,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── SELL CTA ── */}
-        <section className={styles.sellSection}>
+        <section className={styles.sellSection} id="how-it-works">
           <div className={styles.container}>
             <div className={styles.sellBanner}>
               <div className={styles.sellLeft}>
@@ -309,13 +367,13 @@ export default async function HomePage() {
                   <strong>Submit details</strong>
                   <span>Tell us about your car in a few steps.</span>
                 </div>
-                <div className={styles.sellArrow}>→</div>
+                <div className={styles.sellArrow} aria-hidden="true"><IconArrowRight size={20} /></div>
                 <div className={styles.sellStep}>
                   <div className={styles.sellStepCircle}>2</div>
                   <strong>Get a valuation</strong>
                   <span>Receive an estimated value for your car.</span>
                 </div>
-                <div className={styles.sellArrow}>→</div>
+                <div className={styles.sellArrow} aria-hidden="true"><IconArrowRight size={20} /></div>
                 <div className={styles.sellStep}>
                   <div className={styles.sellStepCircle}>3</div>
                   <strong>Dealers come to you</strong>
@@ -374,9 +432,17 @@ export default async function HomePage() {
 
               <div className={styles.footerCol}>
                 <h4 className={styles.footerColHeading}>PRICE RANGE</h4>
-                <Link href="/listings?max_price=5000" className={styles.footerLink}>Under $5,000</Link>
-                <Link href="/listings?max_price=10000" className={styles.footerLink}>Under $10,000</Link>
-                <Link href="/listings?max_price=20000" className={styles.footerLink}>Under $20,000</Link>
+                <div className={styles.footerPriceGrid}>
+                  {PRICE_STEPS.map((k) => (
+                    <Link
+                      key={k}
+                      href={`/listings?max_price=${k * 1000}`}
+                      className={styles.footerLink}
+                    >
+                      Under ${k}k
+                    </Link>
+                  ))}
+                </div>
               </div>
 
               <div className={styles.footerCol}>
