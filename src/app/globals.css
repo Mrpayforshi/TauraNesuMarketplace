@@ -44,6 +44,8 @@ h1,h2,h3,h4,h5 {
   line-height: 1.2;
 }
 a { color: inherit; text-decoration: none; }
+
+/* Scroll containment, site-wide. Any nested scroller (modals, dropdown lists, tables, textareas, sticky panes) keeps its wheel/touch scroll to itself and does not chain into the page behind it. Only applies to elements that are actually scrollable; html/body are excluded so pull-to-refresh and back-swipe keep working on mobile. */ :where(:not(html, body)) { overscroll-behavior: contain; }
 img { display: block; max-width: 100%; }
 button { cursor: pointer; font-family: inherit; border: none; }
 input, select, textarea { font-family: inherit; }
