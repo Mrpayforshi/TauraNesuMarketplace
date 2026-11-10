@@ -1,0 +1,44 @@
+/* Repo path: src/app/auth-extras.module.css  (NEW FILE)
+   Small shared styles for the new auth states: success message, centred
+   single-card layout, and the confirm-email screen. */
+
+.successBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(5, 150, 105, 0.12);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #34d399;
+}
+
+.note {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 4px;
+}
+
+.noteLink {
+  color: var(--blue);
+  font-weight: 500;
+}
+.noteLink:hover { opacity: 0.8; }
+
+/* Lets a screen use the full width of the 2-column auth grid. */
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.centerText {
+  text-align: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
