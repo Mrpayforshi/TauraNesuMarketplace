@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase'
 import { normalizeZimPhone, phoneToSyntheticEmail } from '@/lib/phone-auth'
+import { checkRateLimit, getClientIp, tooManyRequests } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   let body: unknown
@@ -18,6 +19,18 @@ export async function POST(req: NextRequest) {
   if (!password || typeof password !== 'string') {
     return Response.json({ error: 'Password is required' }, { status: 400 })
   }
+
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  // Two buckets: one per IP (stops one machine spraying many accounts) and one
+  // per identifier (stops many machines hammering one account).
+  const ip = getClientIp(req)
+  const identifier = email.trim().toLowerCase().slice(0, 200)
+
+  const ipLimit = await checkRateLimit(ip, { prefix: 'login:ip', limit: 20, windowSec: 600 })
+  if (!ipLimit.ok) return tooManyRequests(ipLimit.retryAfterSec)
+
+  const idLimit = await checkRateLimit(identifier, { prefix: 'login:id', limit: 8, windowSec: 900 })
+  if (!idLimit.ok) return tooManyRequests(idLimit.retryAfterSec)
 
   // The login form's single input accepts either an email or a dealer's
   // login phone number — figure out which was typed. Anything containing
@@ -69,13 +82,9 @@ export async function POST(req: NextRequest) {
   // admin and dealer are NOT mutually exclusive — the same auth user can
   // carry app_metadata.role === 'admin' AND own an active row in `dealers`
   // at the same time (this actually happens in this project right now).
-  // The previous version of this route checked admin first and returned
-  // immediately if it matched, never even querying `dealers` for that
-  // user. That meant an admin account that also runs a dealer profile was
-  // ALWAYS redirected to /admin and could never reach /dealer/dashboard
-  // through this form, regardless of intent. Always resolve both flags;
-  // let the caller decide what to do with them based on the user's actual
-  // intent (see the `portal` handling in src/app/login/page.tsx).
+  // Always resolve both flags; let the caller decide what to do with them
+  // based on the user's actual intent (see the `portal` handling in
+  // src/app/login/page.tsx).
 
   const isAdmin = data.user.app_metadata?.role === 'admin'
 
@@ -94,9 +103,7 @@ export async function POST(req: NextRequest) {
   // Kept for backward compatibility with any caller that only reads a
   // single `role` string — used by the generic "Sign in" flow (no
   // explicit portal intent), where admin > dealer > buyer is a reasonable
-  // default. Callers that DO know the user's intent (e.g. they arrived via
-  // the Dealer entry point) should branch on isDealer / isAdmin directly
-  // instead of collapsing to this field.
+  // default.
   let role: 'admin' | 'dealer' | 'buyer' = 'buyer'
   if (isAdmin) role = 'admin'
   else if (isDealer) role = 'dealer'
@@ -112,6 +119,9 @@ export async function POST(req: NextRequest) {
     dealerId: dealer?.id ?? null,
     session: {
       access_token: data.session.access_token,
+      // Needed so the client can silently renew the ~1 hour access token
+      // via /api/auth/refresh instead of kicking the user back to /login.
+      refresh_token: data.session.refresh_token,
       expires_at: data.session.expires_at,
     },
   })
