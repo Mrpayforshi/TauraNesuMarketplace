@@ -349,14 +349,7 @@
 }
 
 /* ── Detail panel ── */
-.detail {
-  position: sticky;
-  top: 16px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.detail { position: sticky; top: 16px; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; min-width: 0; display: flex; flex-direction: column; gap: 16px; } .detail::-webkit-scrollbar { width: 6px; } .detail::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 999px; }
 
 .hero {
   position: relative;
@@ -614,9 +607,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .detail {
-    position: static;
-  }
+  .detail { position: static; max-height: none; overflow: visible; }
 
   .periodRow {
     margin-left: 0;
